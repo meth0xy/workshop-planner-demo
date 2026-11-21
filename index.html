@@ -829,6 +829,15 @@ dialog.set[open] { display: flex; flex-direction: column; }
     if (!el || !el.animate || reduceMotion()) return null;
     try { return el.animate(frames, Object.assign({ duration: T.snappy, easing: EZ.snappy }, opts)); } catch (_) { return null; }
   }
+  // Wartet, bis die Eingabe ruht. flush führt Wartendes sofort aus (etwa vor Enter), cancel verwirft es.
+  function debounced(fn, ms) {
+    let t = 0, args = [];
+    const run = () => { if (!t) return; clearTimeout(t); t = 0; fn(...args); };
+    const d = (...a) => { args = a; clearTimeout(t); t = setTimeout(run, ms); };
+    d.flush = run;
+    d.cancel = () => { clearTimeout(t); t = 0; };
+    return d;
+  }
   const BLUR_IN = (x, y) => [{ opacity: 0, translate: x + 'px ' + y + 'px', filter: 'blur(4px)' }, { opacity: 1, translate: '0 0', filter: 'blur(0)' }];
   const STEP = 15;
   const hourPx = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour')) || 72;
@@ -1517,6 +1526,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     previewActive();
   }
   function endSearch(restoreDay) {
+    searchSoon.cancel();
     q.value = '';
     $('qClear').hidden = true; $('qKbd').hidden = false;
     q.setAttribute('aria-expanded', 'false'); q.removeAttribute('aria-activedescendant');
@@ -1894,6 +1904,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     previewSlot();
   }
   function finderInput(el) {
+    finderSoon.cancel();
     const v = el.value;
     finder[el.dataset.fi] = el.dataset.fi === 'lane' ? (v === '' ? null : +v) : el.dataset.fi === 'from' ? v || todayKey : v;
     Object.assign(finder, { limit: 12, active: 0 });
@@ -1901,6 +1912,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const s = finder.shown[0];
     announce(s ? 'Nächster freier Termin: ' + (nearDay(s.day) || dfTitle.format(fromKey(s.day))) + ', ' + hm(s.start) + ' Uhr bei ' + settings.lanes[s.lane].name + '.' : 'Kein freier Termin gefunden.');
   }
+  // Das Datumsfeld meldet jede Ziffer. Die Suche über acht Wochen läuft erst, wenn die Eingabe ruht, und nur, solange das Feld noch da ist.
+  const finderSoon = debounced((el) => { if (view === 'finder' && el.isConnected) finderInput(el); }, 250);
   function takeSlot(i) {
     const s = finder.shown[i], svc = finderService();
     openForm('new', { ...finder.draft, service: svc.name, len: svc.dur, day: s.day, start: s.start, lane: s.lane, dirty: finder.dirty, fromFinder: true });
@@ -2230,7 +2243,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     }
   });
   panel.addEventListener('input', (e) => {
-    if (view === 'finder' && e.target.dataset.fi === 'from') { finderInput(e.target); return; }
+    if (view === 'finder' && e.target.dataset.fi === 'from') { finderSoon(e.target); return; }
     if (view !== 'form') return;
     formState.dirty = true;
     if (e.target.id === 'f-name') { syncInvalidSoft(e.target); drawDraftGhost(); suggest(e.target.value); }
@@ -2287,6 +2300,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
   }
   panel.addEventListener('submit', (e) => { e.preventDefault(); saveForm(); });
   panel.addEventListener('keydown', (e) => {
+    // Wer das Datum verlässt, landet in einer Liste, die schon zum Datum passt.
+    if (e.target.id === 'fi-from' && (e.key === 'Tab' || e.key === 'Enter')) { finderSoon.flush(); return; }
     const o = e.target.closest('[data-slot]');
     if (!o) return;
     const n = finder.shown.length, i = +o.dataset.slot;
@@ -2308,8 +2323,13 @@ dialog.set[open] { display: flex; flex-direction: column; }
       // Nach der Rückfrage nimmt das Feld in Chromium erst nach neuem Fokus wieder Text an.
       q.blur(); q.focus();
     }
-    runSearch();
+    // Leeren wirkt sofort, Tippen erst, wenn die Eingabe kurz ruht. Das Kreuz zum Leeren erscheint gleich.
+    const v = q.value.trim();
+    if (!v) { searchSoon.cancel(); runSearch(); return; }
+    $('qClear').hidden = false; $('qKbd').hidden = true;
+    searchSoon();
   });
+  const searchSoon = debounced(runSearch, 160);
   // Der Hinweis im Suchfeld wird nie abgeschnitten: Es steht die längste Fassung da, die hineinpasst.
   const HINTS = ['Name, Kennzeichen, Telefon', 'Name, Kennzeichen', 'Suchen'], pen = document.createElement('canvas').getContext('2d');
   function fitHint() {
@@ -2321,6 +2341,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
   document.fonts.ready.then(fitHint);
   q.addEventListener('keydown', (e) => {
     if (e.isComposing) return;
+    // Pfeile und Enter beziehen sich auf das, was gerade im Feld steht.
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') searchSoon.flush();
     if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(-1); }
     else if (e.key === 'Enter') { e.preventDefault(); if (active >= 0) openDetail(hits[active].id, true); }
