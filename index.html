@@ -1317,6 +1317,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const hist = A.filter((x) => x.c === a.c && x !== a).sort((x, y) => (ord(x) < ord(y) ? 1 : -1)).slice(0, 6);
     const nx = NEXT[a.status];
     const since = a.status === 'work' && a.since != null ? '<small>seit ' + hm(a.since) + '</small>' : '';
+    const msg = MSG[a.status] && MSG[a.status](a);
     panel.dataset.view = 'detail';
     panel.innerHTML =
       (fromSearch ? '<button type="button" class="back" data-back>' + ICON.left + 'Treffer für „' + esc(q.value.trim()) + '“</button>' : '') +
@@ -1333,16 +1334,17 @@ dialog.set[open] { display: flex; flex-direction: column; }
       '<dt>Telefon</dt><dd>' + esc(a.c.phone || 'nicht hinterlegt') + '</dd><dt>Leistung</dt><dd>' + esc(a.service) + ', ' + dur(a.dur) + '</dd>' +
       (a.note ? '<dt>Notiz</dt><dd>' + esc(a.note) + '</dd>' : '') + '</dl>' +
       '<div class="d-links"><button type="button" class="btn quiet" data-move>Verschieben</button><button type="button" class="btn quiet" data-edit>Bearbeiten</button><button type="button" class="btn quiet danger" data-cancel>Absagen</button></div>' +
-      (MSG[a.status] ? '<section><h3 class="section-t">Nachricht an den Kunden<span class="tag">Vorschau</span></h3>' +
-        '<p class="msg-t"><small>' + (a.c.phone ? 'An ' + esc(a.c.phone) : 'Telefonnummer fehlt noch') + '</small>' + esc('Guten Tag ' + a.c.name + ', ' + MSG[a.status](a)) + '</p>' +
+      (msg ? '<section><h3 class="section-t">Nachricht an den Kunden<span class="tag">Vorschau</span></h3>' +
+        '<p class="msg-t"><small>' + (a.c.phone ? 'An ' + esc(a.c.phone) : 'Telefonnummer fehlt noch') + '</small>' + esc('Guten Tag ' + a.c.name + ', ' + msg) + '</p>' +
         '<button type="button" class="btn quiet" data-msg>Nachricht senden</button></section>' : '') +
       '<section><h3 class="section-t">Weitere Termine dieses Fahrzeugs</h3>' + (hist.length ? '<div class="hist">' + hist.map((x) => itemHtml(x, null, { statusOnly: true })).join('') + '</div>' : '<p class="empty" style="margin:0">Das ist der erste Termin dieses Fahrzeugs.</p>') + '</section>' +
       '</div></div>';
   }
-  // Abholen geht bis zum Feierabend des heutigen Tages, auch wenn der Termin an einem anderen lag.
+  // Erinnert wird nur an Termine, die noch kommen. Abholen geht bis zum Feierabend des heutigen Tages, auch wenn der Termin an einem anderen lag.
   const MSG = {
-    plan: (a) => 'Erinnerung: ' + (nearDay(a.key) || dfTitle.format(fromKey(a.key))) + ', ' + hm(a.start) + ' Uhr, ' + a.service + ' bei ' + settings.shop + '. Wenn es nicht passt, rufen Sie bitte an.',
-    done: () => 'Ihr Fahrzeug ist fertig. Sie können es heute bis ' + hm(dayWindow(todayKey).close) + ' Uhr bei ' + settings.shop + ' abholen.',
+    plan: (a) => (a.key < todayKey || (a.key === todayKey && a.start <= nowMin) ? null
+      : 'Erinnerung: ' + (nearDay(a.key) || dfTitle.format(fromKey(a.key))) + ', ' + hm(a.start) + ' Uhr, ' + a.service + ' bei ' + settings.shop + '. Wenn es nicht passt, rufen Sie bitte an.'),
+    done: () => { const w = dayWindow(todayKey); return 'Ihr Fahrzeug ist fertig.' + (w ? ' Sie können es heute bis ' + hm(w.close) + ' Uhr bei ' + settings.shop + ' abholen.' : ''); },
   };
   function setStatus(a, s, how) {
     const prev = a.status, prevSince = a.since, prevManual = a.manual;
@@ -1378,15 +1380,15 @@ dialog.set[open] { display: flex; flex-direction: column; }
   }
 
   /* Formular */
-  function openForm(mode, pre = {}) {
-    const a = mode === 'edit' ? BY.get(pre.id) : null;
+  function openForm(kind, pre = {}) {
+    const a = kind === 'edit' ? BY.get(pre.id) : null;
     let d;
     if (a) d = { name: a.c.name, phone: a.c.phone, plate: a.c.plate, car: a.c.car, service: a.service, len: a.dur, day: a.key, start: a.start, lane: a.lane, note: a.note };
     else {
       const svc = svcOf(pre.service) || settings.services[0], day = pre.day || key(cur);
       d = { name: '', phone: '', plate: '', car: '', note: '', service: svc.name, len: svc.dur, day, ...(pre.start == null ? firstFree(day, svc) : null), ...pre };
     }
-    formState = { mode, id: a ? a.id : null, dirty: !!pre.dirty, fromFinder: !!pre.fromFinder };
+    formState = { mode: kind, id: a ? a.id : null, dirty: !!pre.dirty, fromFinder: !!pre.fromFinder };
     view = 'form';
     selId = a ? a.id : null;
     panel.dataset.view = 'form';
@@ -1788,9 +1790,9 @@ dialog.set[open] { display: flex; flex-direction: column; }
     if (!d || !d.active) return;
     suppressClick = Date.now();
     if (d.ghost) d.ghost.remove();
-    const a = d.a, changed = d.lane !== a.lane || d.start !== a.start;
+    const a = d.a, moved = d.lane !== a.lane || d.start !== a.start;
     const from = d.card.getBoundingClientRect();
-    if (!cancel && changed && !d.bad) {
+    if (!cancel && moved && !d.bad) {
       moveTo(a, d.lane, d.start, 'drag');
       refresh(a.id);
       const el = plateEl.querySelector('.card[data-id="' + a.id + '"]');
@@ -1800,7 +1802,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
       }
       return;
     }
-    if (!cancel && changed && d.bad) toast(d.bad.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { bad: true });
+    if (!cancel && moved && d.bad) toast(d.bad.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { bad: true });
     if (cancel) announce('Verschieben abgebrochen.');
     const tr = d.card.style.translate;
     d.card.querySelector('.card-head').innerHTML = d.headHtml;
