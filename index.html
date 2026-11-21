@@ -6,12 +6,12 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="light dark">
 <script>try { document.querySelector('meta[name="color-scheme"]').content = localStorage.getItem("color-scheme") ?? "light dark"; } catch (e) {}</script>
-<title>Werkstattplaner</title>
+<title>KFZ Thürwächter · Werkstattplaner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-/* Stecktafel: Bühnen sind Schienen, Termine sind gesteckte Karten. Der Kartenkopf trägt Uhrzeit und Stand.
+/* Stecktafel: jeder Mechaniker hat eine Schiene, Termine sind gesteckte Karten. Der Kartenkopf trägt Uhrzeit und Stand.
    Hell für das Büro, dunkel für die Halle oder den Abend. Ohne Einstellung folgt die Seite dem System. */
 :root {
   color-scheme: light dark;
@@ -95,7 +95,7 @@ svg { display: block; flex: none; }
 [hidden] { display: none !important; }
 
 /* Grundgerüst */
-.app { height: 100dvh; display: grid; grid-template-rows: auto auto minmax(0, 1fr); }
+.app { height: 100dvh; display: grid; grid-template: auto auto minmax(0, 1fr) / minmax(0, 1fr); }
 
 /* Kopfleiste */
 .bar {
@@ -106,7 +106,10 @@ svg { display: block; flex: none; }
   border-bottom: 1px solid light-dark(transparent, #232B31);
 }
 .bar :focus-visible { outline-color: #FFFFFF; }
+.brand { flex-basis: 100%; display: flex; align-items: center; gap: .625rem; margin-bottom: -.125rem; }
+.brand h1 { font-size: .875rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .date-pick { position: relative; display: flex; align-items: center; }
+.mo-nav { display: flex; gap: .25rem; margin-right: .875rem; }
 .title {
   display: flex; align-items: center; gap: .5rem; min-height: var(--target);
   padding: 0 .5rem; margin-left: -.5rem; border: 0; border-radius: var(--r); background: none;
@@ -125,6 +128,10 @@ svg { display: block; flex: none; }
 .btn svg { width: .8rem; height: .8rem; }
 .bar .chip { background: var(--bar-chip); color: var(--bar-ink); }
 .bar .chip:hover { background: var(--bar-chip-h); }
+.seg { display: flex; gap: 2px; padding: 2px; border-radius: var(--r); background: var(--bar-chip); }
+.seg .btn { min-height: calc(var(--target) - 4px); padding: 0 .75rem; border-radius: 2px; background: none; color: var(--bar-ink-2); }
+.seg .btn:hover { color: var(--bar-ink); }
+.seg .btn[aria-pressed="true"] { background: #FFFFFF; color: #14191E; }
 .sum {
   display: flex; align-items: center; gap: .875rem; min-height: var(--target); padding: 0 .625rem;
   border: 0; border-radius: var(--r); background: none; color: var(--bar-ink-2); font-size: .875rem; white-space: nowrap;
@@ -134,10 +141,10 @@ svg { display: block; flex: none; }
 .sum b { color: var(--bar-ink); font-weight: 700; margin-right: .2rem; }
 .sum span + span { padding-left: .875rem; border-left: 1px solid var(--bar-chip-h); }
 .demo { color: var(--bar-ink-2); font-size: .75rem; font-weight: 500; border: 1px dashed var(--bar-chip-h); border-radius: var(--r); padding: .15rem .5rem; white-space: nowrap; }
-.trail { margin-left: auto; display: flex; align-items: center; gap: .625rem; min-width: 0; }
+.trail { flex: 1 1 35.5rem; display: flex; align-items: center; justify-content: flex-end; gap: .625rem; min-width: 0; }
 .search {
   position: relative; display: flex; align-items: center; gap: .5rem;
-  width: min(24rem, 100%); min-height: calc(var(--target) + .125rem);
+  flex: 1; min-width: 0; max-width: 24rem; min-height: calc(var(--target) + .125rem);
   padding: .125rem .375rem .125rem .75rem; border-radius: var(--r);
   background: var(--search-bg); color: var(--ink);
   transition: box-shadow .15s var(--ease);
@@ -157,8 +164,11 @@ kbd {
 .search .clear { display: grid; place-items: center; width: var(--target); height: var(--target); border: 0; border-radius: var(--r); background: none; color: var(--ink-2); }
 .search .clear:hover { background: var(--panel-2); color: var(--ink); }
 .search .clear svg { width: .7rem; height: .7rem; }
-.btn.new { background: #FFFFFF; color: #14191E; padding: 0 1rem; }
-.btn.new:hover { background: #E3E8EC; }
+.btn.new, .btn.find { background: #FFFFFF; color: #14191E; padding: 0 1rem; }
+.btn.new:hover, .btn.find:hover { background: #E3E8EC; }
+.btn.find svg, .btn.gear svg { width: 1rem; height: 1rem; }
+.btn.ico { width: calc(var(--target) + .125rem); padding: 0; }
+.trail .btn { flex: none; }
 
 /* Wochenleiste */
 .week {
@@ -177,7 +187,7 @@ kbd {
 }
 .wd:hover { background: var(--line-soft); }
 .wd-d { display: flex; align-items: baseline; gap: .35rem; font-weight: 700; font-size: .9375rem; white-space: nowrap; }
-.wd-d small { font-size: .75rem; font-weight: 700; color: var(--board); background: var(--ink); border-radius: 2px; padding: 0 .3rem; }
+.wd-d small, .md-d small { font-size: .75rem; font-weight: 700; color: var(--board); background: var(--ink); border-radius: 2px; padding: 0 .3rem; }
 .wd-f { font-size: .8125rem; color: var(--ink-2); text-align: right; white-space: nowrap; }
 .wd-m { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .wd-m i { display: block; height: 100%; background: var(--ink-2); }
@@ -186,9 +196,10 @@ kbd {
 .wd[aria-current="date"] .wd-m i { background: var(--ink); }
 
 /* Arbeitsfläche */
-.work { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w); }
-.scroller { position: relative; min-height: 0; overflow: auto; background: var(--board); overscroll-behavior: contain; scrollbar-color: var(--scroll) var(--board); }
-.plate { position: relative; display: grid; grid-template-columns: 3.5rem repeat(4, minmax(12.5rem, 1fr)); min-width: 100%; }
+.work { grid-row: 3; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w); }
+.scroller:focus { outline: 0; }
+.scroller, .month { position: relative; min-height: 0; overflow: auto; background: var(--board); overscroll-behavior: contain; scrollbar-color: var(--scroll) var(--board); }
+.plate { position: relative; display: grid; grid-template-columns: 3.5rem repeat(var(--lanes), minmax(12.5rem, 1fr)); min-width: 100%; }
 .corner { position: sticky; left: 0; top: 0; z-index: 6; background: var(--board); box-shadow: 0 1px 0 var(--line); }
 .lh {
   position: sticky; top: 0; z-index: 5; display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: .2rem .5rem;
@@ -209,7 +220,8 @@ kbd {
   background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(var(--line-soft) 1px, transparent 1px);
   background-size: 100% var(--hour), 100% calc(var(--hour) / 2);
 }
-.lane.closed { background-color: var(--line-soft); }
+.shut { position: absolute; left: 0; right: 0; cursor: default; }
+.shut, .md.closed { background: repeating-linear-gradient(-45deg, var(--hatch-a) 0 6px, transparent 6px 12px) var(--line-soft); }
 .hint-slot, .ghost {
   position: absolute; left: 4px; right: 4px; z-index: 1; pointer-events: none;
   display: flex; align-items: center; justify-content: center; gap: .4rem; overflow: hidden;
@@ -217,12 +229,33 @@ kbd {
 }
 .hint-slot { border: 1.5px dashed var(--ink-2); color: var(--ink); background: color-mix(in srgb, var(--card) 60%, transparent); }
 .hint-slot svg { width: .7rem; height: .7rem; }
-.ghost { z-index: 3; flex-direction: column; border: 2px dashed var(--ink); background: color-mix(in srgb, var(--card) 65%, transparent); color: var(--ink); text-align: center; padding: 0 .5rem; }
+.ghost { z-index: 3; flex-flow: column wrap; align-content: center; white-space: nowrap; border: 2px dashed var(--ink); background: color-mix(in srgb, var(--card) 65%, transparent); color: var(--ink); text-align: center; padding: 0 .5rem; }
 .ghost.bad { border-color: var(--ink); color: var(--ink); background: repeating-linear-gradient(-45deg, var(--hatch-a) 0 6px, var(--hatch-b) 6px 12px); }
 .ghost.bad span { padding: 0 .3rem; background: var(--hatch-b); border-radius: 2px; }
 .ghost .warn, .clash .warn { width: 1rem; height: 1rem; }
 .now { position: absolute; left: 3.5rem; right: 0; height: 2px; z-index: 1; background: var(--now); pointer-events: none; }
 .now::before { content: ""; position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--now); }
+
+/* Monat: eine Zelle je offenem Tag, gleiche Angaben wie in der Wochenleiste */
+.mo { display: grid; grid-template-columns: repeat(var(--days), minmax(0, 1fr)); grid-template-rows: auto; grid-auto-rows: minmax(6.75rem, 1fr); gap: 1px; min-height: 100%; background: var(--line); }
+.mo [role="row"] { display: contents; }
+.mo [role="gridcell"] { display: grid; background: var(--board); }
+.mo-h { position: sticky; top: 0; z-index: 1; padding: .5rem .75rem; background: var(--board); box-shadow: 0 1px 0 var(--line); font-size: .8125rem; font-weight: 700; color: var(--ink-2); }
+.md {
+  display: grid; align-content: start; justify-items: start; gap: .3rem; min-width: 0; padding: .55rem .75rem .7rem;
+  border: 0; background: none; text-align: left; font-size: .8125rem; color: var(--ink-2);
+  transition: background-color .15s var(--ease);
+}
+.md:hover { background: var(--line-soft); }
+.md-d { display: flex; align-items: baseline; gap: .35rem; font-size: 1rem; font-weight: 700; color: var(--ink); }
+.md-f, .md-a { font-weight: 600; color: var(--ink); }
+.md-a { overflow-wrap: anywhere; hyphens: auto; }
+.md .wd-m { justify-self: stretch; }
+.md-s { display: inline-flex; align-items: center; gap: .3rem; padding: .1rem .45rem; border-radius: 2px; background: var(--card); color: var(--ink); font-size: .75rem; font-weight: 700; box-shadow: 0 0 0 1px var(--line); }
+.md-s svg { width: .65rem; height: .65rem; }
+.md.closed .md-d { color: var(--ink-2); }
+.md.on { box-shadow: inset 0 0 0 2.5px var(--ink); }
+.md:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 /* Karten */
 .card {
@@ -270,9 +303,12 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 .icon-btn::after { content: ""; position: absolute; inset: -6px; }
 .icon-btn:hover { background: var(--panel-2); color: var(--ink); }
 .icon-btn svg { width: .75rem; height: .75rem; }
-.back { display: inline-flex; align-items: center; gap: .35rem; min-height: var(--target); margin: .75rem 0 0 .75rem; padding: 0 .5rem; border: 0; border-radius: var(--r); background: none; color: var(--ink-2); font-size: .875rem; font-weight: 600; }
-.back:hover { background: var(--panel-2); color: var(--ink); }
+.back, .link { display: inline-flex; align-items: center; gap: .35rem; min-height: var(--target); padding: 0 .5rem; border: 0; border-radius: var(--r); background: none; color: var(--ink-2); font-size: .875rem; font-weight: 600; }
+.back { margin: .75rem 0 0 .75rem; }
+.link { justify-self: start; margin-left: -.5rem; }
+.back:hover, .link:hover { background: var(--panel-2); color: var(--ink); }
 .back svg { width: .7rem; height: .7rem; }
+.link svg { width: .9rem; height: .9rem; }
 .grp { display: flex; align-items: baseline; gap: .4rem; padding: 1rem 1.25rem .35rem; font-size: .8125rem; font-weight: 700; color: var(--ink); }
 .grp small { font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
 .item {
@@ -286,12 +322,14 @@ html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 .item .i-when { font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
 .item .i-name { grid-column: 1 / -1; font-size: .9375rem; font-weight: 700; }
 .item .i-sub { grid-column: 1 / -1; font-size: .8125rem; color: var(--ink-2); overflow-wrap: anywhere; }
-.item[aria-selected="true"] { background: var(--act); color: var(--act-ink); box-shadow: none; }
-.item[aria-selected="true"] + .item { box-shadow: none; }
-.item[aria-selected="true"] .i-when, .item[aria-selected="true"] .i-sub { color: color-mix(in srgb, var(--act-ink) 75%, var(--act)); }
+.item[aria-selected="true"], .orow[aria-selected="true"] { background: var(--act); color: var(--act-ink); box-shadow: none; }
+.item[aria-selected="true"] + .item, .orow[aria-selected="true"] + .orow { box-shadow: none; }
+.item[aria-selected="true"] .i-when, .item[aria-selected="true"] .i-sub, .orow[aria-selected="true"] .o-main span { color: color-mix(in srgb, var(--act-ink) 75%, var(--act)); }
 mark { background: none; color: inherit; font-weight: 800; text-decoration: underline 2px; text-underline-offset: 2px; }
 .chip-st { display: inline-flex; align-items: center; gap: .3rem; padding: .1rem .45rem; border-radius: 2px; background: var(--hb); color: var(--hf); font-size: .75rem; font-weight: 700; white-space: nowrap; }
 .chip-st svg { height: .65rem; width: auto; }
+.tag { padding: .1rem .45rem; border-radius: 2px; background: var(--panel-3); color: var(--ink); font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.more { margin: .75rem 1.25rem 0; }
 
 /* Übersicht: eine Zeile pro Termin, Uhrzeit vorn */
 .orow {
@@ -300,7 +338,7 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
   transition: background-color .12s var(--ease);
 }
 .orow + .orow { box-shadow: 0 -1px 0 var(--line-soft); }
-.orow:hover { background: var(--panel-2); box-shadow: none; }
+.orow:not([aria-selected="true"]):hover { background: var(--panel-2); box-shadow: none; }
 .orow:hover + .orow { box-shadow: none; }
 .o-time { font-size: 1rem; font-weight: 700; }
 .o-main { display: grid; min-width: 0; }
@@ -343,12 +381,15 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
 .d-links { display: flex; flex-wrap: wrap; gap: .5rem; }
 .section-t { font-size: .8125rem; font-weight: 700; color: var(--ink); margin-bottom: .35rem; }
 .hist .item { width: 100%; margin: 0; }
+.section-t .tag { margin-left: .4rem; }
+.msg-t { margin-bottom: .5rem; padding: .625rem .75rem; border: 1.5px dashed var(--line); border-radius: var(--r); font-size: .875rem; }
+.msg-t small { display: block; margin-bottom: .2rem; font-size: .8125rem; color: var(--ink-2); }
 
 /* Formular */
 .form { display: grid; gap: .875rem; padding: .5rem 1.25rem 0; }
 .field { display: grid; gap: .3rem; min-width: 0; }
 .field label { font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
-.field .hint { font-size: .8125rem; color: var(--ink-2); }
+.field .hint, .form > .hint, .set-body .hint { font-size: .8125rem; color: var(--ink-2); }
 .field input, .field select {
   width: 100%; min-width: 0; min-height: var(--target); padding: 0 .625rem;
   border: 1.5px solid var(--line); border-radius: var(--r); background-color: var(--field); color: var(--ink); font-size: .9375rem;
@@ -378,6 +419,7 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
 .clash .btn:hover { background: var(--panel-3); }
 .ok-slot { display: flex; align-items: center; gap: .45rem; font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
 .ok-slot svg { width: .8rem; height: .8rem; color: var(--ink); }
+#f-slot { display: grid; gap: .5rem; }
 .f-actions { display: flex; gap: .5rem; padding-top: .25rem; }
 
 /* Meldungen */
@@ -395,20 +437,59 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
 .toast :focus-visible { outline-color: #FFFFFF; }
 @media (min-width: 68.8125rem) {
   .work { grid-template-rows: minmax(0, 1fr) auto; }
-  .scroller { grid-row: 1 / 3; }
+  .scroller, .month { grid-row: 1 / 3; }
   .panel { grid-column: 2; grid-row: 1; }
   .toasts { position: static; grid-column: 2; grid-row: 2; width: auto; padding: 0 .75rem; background: var(--panel); border-left: 1px solid var(--line); }
   .toasts:not(:empty) { padding-block: .75rem; border-top: 1px solid var(--line); }
 }
 
-/* Rückfrage */
-dialog.ask { width: min(26rem, calc(100% - 2rem)); padding: 1.25rem; border: 0; border-radius: 6px; background: var(--panel); color: var(--ink); box-shadow: var(--sh-float); }
-dialog.ask::backdrop { background: var(--backdrop); overflow: hidden; overscroll-behavior: contain; }
-dialog.ask:modal { overscroll-behavior: contain; }
+/* Rückfrage und Einstellungen */
+dialog { border: 0; border-radius: 6px; background: var(--panel); color: var(--ink); box-shadow: var(--sh-float); }
+dialog::backdrop { background: var(--backdrop); overflow: hidden; overscroll-behavior: contain; }
+dialog:modal { overscroll-behavior: contain; }
+dialog.ask { width: min(26rem, calc(100% - 2rem)); padding: 1.25rem; }
 dialog.ask h2 { font-size: 1.125rem; font-weight: 700; }
 dialog.ask p { margin-top: .4rem; color: var(--ink-2); }
 dialog.ask form { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1.25rem; }
 dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
+dialog.set { width: min(46rem, calc(100% - 2rem)); height: min(41rem, calc(100dvh - 2rem)); padding: 0; }
+dialog.set[open] { display: flex; flex-direction: column; }
+.set-head { display: flex; align-items: center; gap: .5rem; padding: 1.125rem .75rem .625rem 1.25rem; }
+.set-head h2 { flex: 1; font-size: 1.125rem; font-weight: 700; }
+.tabs { display: flex; gap: .375rem; padding: 0 1.25rem .75rem; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs .btn { background: none; color: var(--ink-2); }
+.tabs .btn:hover { background: var(--panel-2); color: var(--ink); }
+.tabs .btn[aria-selected="true"] { background: var(--act); color: var(--act-ink); }
+.set-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 1rem 1.25rem 1.25rem; scrollbar-color: var(--scroll) var(--panel); }
+.set-body > section { display: grid; gap: .75rem; }
+.set-body .form { padding: 0; }
+.set-foot { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .625rem 1.25rem .875rem; border-top: 1px solid var(--line); }
+.set-foot p { flex-basis: 100%; min-height: 1.4em; font-size: .8125rem; color: var(--ink-2); }
+.set-foot .go { flex: none; margin-left: auto; }
+.sv-list { display: grid; gap: .375rem; }
+.sv { display: grid; grid-template-columns: minmax(8rem, 1fr) 6.75rem calc(var(--days) * (var(--target) + .25rem) - .25rem) 8rem 2rem; align-items: center; gap: .5rem; }
+.sv-head { font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
+.days { display: flex; gap: .25rem; }
+.day span {
+  display: grid; place-items: center; width: var(--target); height: var(--target); border-radius: var(--r);
+  background: var(--panel-2); color: var(--ink-2); font-size: .8125rem; font-weight: 600; text-decoration: line-through; cursor: pointer;
+  transition: background-color .15s var(--ease), color .15s var(--ease);
+}
+.day:hover span { background: var(--panel-3); }
+.day input:checked + span { background: var(--act); color: var(--act-ink); text-decoration: none; }
+.day input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+.oh { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .75rem; min-height: calc(var(--target) + .75rem); padding: .375rem 0; }
+.oh + .oh { border-top: 1px solid var(--line-soft); }
+.oh strong { flex: 0 0 6.5rem; font-weight: 700; }
+.oh .check { flex: 0 0 7rem; }
+.oh .field { flex: 0 0 6.5rem; }
+.oh > span { color: var(--ink-2); font-size: .875rem; }
+.ab { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 1fr) 2rem; align-items: center; gap: .125rem .75rem; min-height: calc(var(--target) + .75rem); padding: .375rem 0; overflow-wrap: anywhere; }
+.ab + .ab { border-top: 1px solid var(--line-soft); }
+.ab strong { font-weight: 700; }
+.row4 { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(8.75rem, 1fr) minmax(8.75rem, 1fr) minmax(0, 1.2fr); gap: .625rem; }
+.check { display: inline-flex; align-items: center; gap: .5rem; min-height: var(--target); cursor: pointer; }
+.check input { width: 1.125rem; height: 1.125rem; margin: 0; }
 
 /* Schmale Fenster: Seitenleiste wird zur Fläche von unten */
 @media (max-width: 68.75rem) {
@@ -421,21 +502,52 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   }
   .panel[data-view="idle"] { translate: 0 100%; visibility: hidden; }
   .app:has(.panel:not([data-view="idle"])) .week { display: none; }
+  .app:has(.panel:not([data-view="idle"])) .plate, .app:has(.panel:not([data-view="idle"])) .month { padding-bottom: 50dvh; }
+}
+/* Tablet und kleiner Laptop: Die Suche rückt neben den Namen, damit die Kopfleiste zweizeilig bleibt */
+@media (min-width: 45.0625rem) and (max-width: 89.9375rem) {
+  .brand { flex: 0 1 24rem; margin-bottom: 0; }
+  .trail { order: 1; flex-basis: calc(100% - 25rem); }
+  .date-pick, #todayBtn, .seg, .sum { order: 2; }
+}
+@media (max-width: 61.5rem) {
+  .btn.new .lbl, .btn.find .lbl, .sum .lg { display: none; }
+  .btn.new, .btn.find { width: calc(var(--target) + .125rem); padding: 0; }
 }
 @media (max-width: 45rem) {
   .bar { gap: .5rem; }
   .title { font-size: 1.25rem; }
   .trail { order: 3; flex-basis: 100%; }
-  .search { width: auto; flex: 1; }
-  .btn.new .lbl { display: none; }
-  .btn.new { width: calc(var(--target) + .125rem); padding: 0; }
-  .sum { order: 4; min-height: 2rem; padding: 0; font-size: .8125rem; }
-  .demo { order: 5; }
+  .search { max-width: none; }
+  .sum { order: 4; padding: 0; font-size: .8125rem; }
+  .seg { order: 5; margin-left: auto; }
+  .mo-nav { margin-right: .5rem; }
   .demo .dt { display: none; }
   .panel { max-height: 55dvh; }
-  .plate { grid-template-columns: 3rem repeat(4, minmax(11rem, 1fr)); }
+  .app:has(.panel:not([data-view="idle"])) .plate, .app:has(.panel:not([data-view="idle"])) .month { padding-bottom: 55dvh; }
+  .mo { grid-auto-rows: minmax(6rem, auto); }
+  .mo-h, .md { padding-inline: .3rem; }
+  .md { font-size: .75rem; }
+  .plate { grid-template-columns: 3rem repeat(var(--lanes), minmax(9.5rem, 1fr)); }
   .now { left: 3rem; }
   .row3 { grid-template-columns: 1fr 1fr; }
+  .set-head { padding-left: 1rem; }
+  .tabs { padding-inline: 1rem; }
+  .set-body { padding-inline: 1rem; }
+  .set-foot { padding-inline: 1rem; }
+  .sv-head { display: none; }
+  .sv { grid-template: "name name del" "dur lane lane" "days days days" / minmax(0, 1fr) minmax(0, 1fr) 2rem; padding: .625rem 0; }
+  .sv + .sv { border-top: 1px solid var(--line-soft); }
+  .sv-list { gap: 0; }
+  .sv-name { grid-area: name; }
+  .sv-dur { grid-area: dur; }
+  .sv-lane { grid-area: lane; }
+  .sv .days { grid-area: days; }
+  .sv .icon-btn { grid-area: del; }
+  .ab { grid-template-columns: minmax(0, 1fr) 2rem; }
+  .ab .icon-btn { grid-column: 2; grid-row: 1 / span 3; }
+  .row4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row4 > :first-child, .row4 > :last-child { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
@@ -444,19 +556,52 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   .card-head, .d-state, .chip-st { forced-color-adjust: none; }
   .ghost { border-color: Highlight; }
 }
+
+/* Tagesliste: auf Papier nur die Liste, schwarz auf weiß */
+.print { display: none; }
+@media print {
+  @page { size: A4 portrait; margin: 14mm; }
+  html, body { height: auto; overflow: visible; background: #FFFFFF; }
+  .app, dialog { display: none !important; }
+  .print { display: block; color: #000000; font: 400 9.5pt/1.3 var(--font); }
+  .print h1 { font-size: 16pt; font-weight: 700; }
+  .print > p { margin-bottom: 7mm; font-size: 11pt; }
+  .print h2 { margin: 6mm 0 2mm; font-size: 12pt; font-weight: 700; }
+  .print h2 span { font-size: 9.5pt; font-weight: 400; }
+  .print table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .print th, .print td { padding: 1.4mm 1.5mm; border: .3mm solid #000000; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+  .print th { font-weight: 700; }
+  .print th:nth-child(1) { width: 13.5%; }
+  .print th:nth-child(2) { width: 17%; }
+  .print th:nth-child(4) { width: 12.5%; }
+  .print th:nth-child(7) { width: 15%; }
+  .print tr { break-inside: avoid; }
+  .print .blank td { height: 8mm; }
+}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="bar">
+    <div class="brand">
+      <h1 id="shop"></h1>
+      <span class="demo" id="demo" title="Alle Namen, Kennzeichen und Nummern sind erfunden. Termine und Einstellungen bleiben in diesem Browser gespeichert. Zurücksetzen geht in den Einstellungen.">Beispieldaten</span>
+    </div>
     <div class="date-pick">
+      <span class="mo-nav" id="moNav" hidden>
+        <button type="button" class="btn chip ico" data-mo="-1" aria-label="Vorheriger Monat"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M7.5 2.5 4 6l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="btn chip ico" data-mo="1" aria-label="Nächster Monat"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6 4.5 9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </span>
       <button type="button" class="title" id="dateBtn" aria-describedby="dateHint"><span id="dateTitle"></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <span id="dateHint" class="sr">Datum wählen</span>
       <input type="date" id="datePick" tabindex="-1" aria-hidden="true">
     </div>
     <button type="button" class="btn chip" id="todayBtn">Heute</button>
+    <div class="seg" role="group" aria-label="Ansicht">
+      <button type="button" class="btn" id="viewDay" aria-pressed="true">Tag</button>
+      <button type="button" class="btn" id="viewMonth" aria-pressed="false">Monat</button>
+    </div>
     <button type="button" class="sum" id="sum" aria-describedby="sumHint"></button><span class="sr" id="sumHint">Öffnet die Übersicht für heute</span>
-    <span class="demo" id="demo" title="Alle Namen, Kennzeichen und Nummern sind erfunden. Änderungen werden nicht gespeichert.">Beispieldaten</span>
     <div class="trail">
       <div class="search" role="search">
         <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m10.6 10.6 3 3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
@@ -466,20 +611,24 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
         <kbd id="qKbd" aria-hidden="true">/</kbd>
         <button type="button" class="clear" id="qClear" aria-label="Suche leeren" hidden><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2.5 2.5 7 7m0-7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
       </div>
+      <button type="button" class="btn find" id="findBtn" aria-label="Freien Termin finden"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11v9.5h-11zM2.5 7h11M5.5 2.2v3M10.5 2.2v3M6.2 10.3l1.3 1.3 2.4-2.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="lbl" aria-hidden="true">Freien Termin finden</span></button>
       <button type="button" class="btn new" id="newBtn" aria-label="Neuer Termin"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="lbl" aria-hidden="true">Neuer Termin</span></button>
+      <button type="button" class="btn chip ico gear" id="setBtn" aria-label="Einstellungen"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.3" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="5.9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-dasharray="2.3 2.334"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/></svg></button>
     </div>
   </header>
 
   <nav class="week" id="week" aria-label="Woche"></nav>
 
   <main class="work">
-    <section class="scroller" id="scroller" aria-label="Tagestafel">
+    <section class="scroller" id="scroller" aria-label="Tagestafel" tabindex="-1">
       <div class="plate" id="plate"></div>
     </section>
+    <section class="month" id="month" aria-label="Monat" hidden></section>
     <aside class="panel" id="panel" data-view="idle" aria-labelledby="panelTitle"></aside>
     <div class="toasts" id="toasts" role="region" aria-label="Meldungen"></div>
   </main>
 </div>
+<section class="print" id="print"></section>
 <p class="sr" id="live" role="status"></p>
 
 <dialog class="ask" id="ask" aria-labelledby="askTitle" aria-describedby="askText">
@@ -491,17 +640,35 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   </form>
 </dialog>
 
+<dialog class="set" id="settings" aria-labelledby="setTitle">
+  <div class="set-head">
+    <h2 id="setTitle">Einstellungen</h2>
+    <button type="button" class="icon-btn" data-set-close aria-label="Einstellungen schließen"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2.5 2.5 7 7m0-7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Bereiche der Einstellungen">
+    <button type="button" class="btn" role="tab" id="tab-svc" aria-controls="set-svc" aria-selected="true">Leistungen</button>
+    <button type="button" class="btn" role="tab" id="tab-hours" aria-controls="set-hours" aria-selected="false" tabindex="-1">Öffnungszeiten</button>
+    <button type="button" class="btn" role="tab" id="tab-away" aria-controls="set-away" aria-selected="false" tabindex="-1">Abwesenheit</button>
+    <button type="button" class="btn" role="tab" id="tab-shop" aria-controls="set-shop" aria-selected="false" tabindex="-1">Werkstatt</button>
+  </div>
+  <div class="set-body">
+    <section role="tabpanel" id="set-svc" aria-labelledby="tab-svc"></section>
+    <section role="tabpanel" id="set-hours" aria-labelledby="tab-hours" hidden></section>
+    <section role="tabpanel" id="set-away" aria-labelledby="tab-away" hidden></section>
+    <section role="tabpanel" id="set-shop" aria-labelledby="tab-shop" hidden></section>
+  </div>
+  <div class="set-foot">
+    <p id="setNote" role="status"></p>
+    <button type="button" class="btn quiet" id="setReset">Demo zurücksetzen</button>
+    <button type="button" class="btn go" data-set-close>Fertig</button>
+  </div>
+</dialog>
+
 <script>
 (() => {
   'use strict';
 
   /* ---------- Stammdaten ---------- */
-  const LANES = [
-    { name: 'Bühne 1', who: 'Jonas' },
-    { name: 'Bühne 2', who: 'Mehmet' },
-    { name: 'Bühne 3', who: 'Tomasz' },
-    { name: 'Reifenplatz', who: 'Lena' },
-  ];
   const ST = { plan: 'geplant', da: 'Fahrzeug da', work: 'in Arbeit', done: 'fertig', gone: 'abgeholt' };
   const NEXT = { plan: ['da', 'Fahrzeug ist da'], da: ['work', 'Arbeit beginnen'], work: ['done', 'Fertig melden'], done: ['gone', 'Als abgeholt melden'] };
   const P = 'fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
@@ -518,15 +685,29 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     right: `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5 8 6 4.5 9.5" ${P} stroke-width="1.8"/></svg>`,
     plus: `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" ${P} stroke-width="1.8"/></svg>`,
     ok: `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="m2 6.4 2.7 2.7L10 3.4" ${P} stroke-width="1.9"/></svg>`,
+    find: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11v9.5h-11zM2.5 7h11M5.5 2.2v3M10.5 2.2v3M6.2 10.3l1.3 1.3 2.4-2.6" ${P} stroke-width="1.6"/></svg>`,
   };
   const WARN = '<svg class="warn" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8 15 14H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 6.2v3.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="11.9" r=".95" fill="currentColor"/></svg>';
-  const SERVICES = [
-    ['Inspektion', 90], ['Inspektion', 120], ['Ölwechsel', 45], ['HU/AU', 45], ['Bremsen vorne', 120], ['Bremsen hinten', 90],
-    ['Klimaservice', 60], ['Zahnriemen', 240], ['Fehlerdiagnose', 60], ['Kupplung', 300], ['Auspuff', 90], ['Stoßdämpfer', 150], ['Batterie', 30],
-  ];
-  const TYRE = [['Reifenwechsel', 30], ['Reifenwechsel', 30], ['Reifenwechsel mit Einlagerung', 45], ['Achsvermessung', 60], ['Reifen neu aufziehen', 60]];
-  const SERVICE_NAMES = [...new Set([...SERVICES, ...TYRE].map((s) => s[0]))];
-  const DEF_DUR = Object.fromEntries([...TYRE, ...SERVICES].reverse().map(([n, d]) => [n, d]));
+  const LENS = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360];
+  function defaults() {
+    const d = {
+      shop: 'KFZ Thürwächter',
+      lanes: [{ name: 'Peter', place: 'Bühne 1' }, { name: 'David', place: 'Bühne 2' }],
+      hours: { 1: [540, 720], 2: [780, 1020], 3: [540, 720], 4: [780, 1020], 5: [540, 720] },
+      services: [
+        ['Ölwechsel', 45], ['Inspektion', 90], ['HU/AU', 45, [2, 4]], ['Bremsen vorne', 120], ['Bremsen hinten', 90], ['Reifenwechsel', 30],
+        ['Reifenwechsel mit Einlagerung', 45], ['Klimaservice', 60], ['Fehlerdiagnose', 60], ['Zahnriemen', 240], ['Auspuff', 90], ['Batterie', 30],
+      ].map(([name, dur, days = null]) => ({ name, dur, days, lanes: null })),
+      absences: [],
+    };
+    // Die Beispiele hängen am „Heute“ der Seite: Davids Urlaub in der dritten Woche danach, Betriebsferien am nächsten Weihnachten.
+    const t = clockIn(d).today, y = t.getFullYear() - (t.getMonth() === 0 && t.getDate() === 1 ? 1 : 0), urlaub = addDays(monday(t), 21);
+    d.absences = [
+      { lane: 1, from: key(urlaub), to: key(addDays(urlaub, 6)), label: 'Urlaub' },
+      { lane: null, from: y + '-12-24', to: y + 1 + '-01-01', label: 'Betriebsferien' },
+    ].sort((a, b) => (a.from < b.from ? -1 : 1));
+    return d;
+  }
   const NOTES = ['', '', '', '', '', '', 'Kunde wartet', 'Ersatzwagen gebucht', 'Teile sind bestellt', 'Teile sind da', 'Bringt das Auto am Vorabend', 'Räder eingelagert, Regal B3', 'Bis 400 € freigegeben', 'Ruft vorher an'];
   const FIRST = ['Sabine', 'Mehmet', 'Holger', 'Aylin', 'Thorsten', 'Katarzyna', 'Malte', 'Ingrid', 'Deniz', 'Uwe', 'Carla', 'Jürgen', 'Nadine', 'Piotr', 'Heike', 'Florian', 'Elif', 'Rainer', 'Svenja', 'Goran', 'Monika', 'Tim', 'Fatma', 'Bernd'];
   const LAST = ['Krüger', 'Yıldız', 'Brandt', 'Demir', 'Vogel', 'Nowak', 'Jansen', 'Scholz', 'Arslan', 'Lindemann', 'Fischer', 'Hartmann', 'Petersen', 'Kowalski', 'Bauer', 'Schulte', 'Kaya', 'Böhm', 'Lorenz', 'Marković', 'Seidel', 'Winkler', 'Özdemir', 'Kuhn'];
@@ -545,9 +726,20 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   const dfTitle = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   const dfShort = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
   const dfDay = new Intl.DateTimeFormat('de-DE', { weekday: 'short' });
+  const dfDate = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'numeric' });
+  const dfNum = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const dfLong = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const dfMonth = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
+  const isKey = (k) => typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k);
+  const WD = Array.from({ length: 7 }, (_, wd) => {
+    const d = new Date(2024, 0, 7 + wd), long = new Intl.DateTimeFormat('de-DE', { weekday: 'long' }).format(d);
+    return { long, short: dfDay.format(d), adv: long.toLowerCase() + 's' };
+  });
+  const nAppts = (n) => (n === 1 ? '1 Termin' : n + ' Termine');
+  const listDe = (a) => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' und ' + a[a.length - 1]);
+  const opt = (value, label, sel) => '<option value="' + esc(value) + '"' + (sel ? ' selected' : '') + '>' + esc(label) + '</option>';
   const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const OPEN = 7 * 60, BOARD_END = 18 * 60, WORK_START = 7 * 60 + 30, STEP = 15;
-  const closeOf = (d) => (d.getDay() === 6 ? 13 * 60 : 17 * 60);
+  const STEP = 15;
   const hourPx = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour')) || 72;
   const norm = (s) => s.toLowerCase().replace(/ß/g, 'ss').replace(/ı/g, 'i').normalize('NFD').replace(/[̀-ͯ]/g, '');
   function rng(seed) {
@@ -557,20 +749,105 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
   const pick = (r, arr) => arr[Math.floor(r() * arr.length)];
-  const dayLabel = (k) => (k === todayKey ? 'Heute' : k === key(addDays(today, 1)) ? 'Morgen' : dfShort.format(fromKey(k)));
+  const nearDay = (k) => (k === todayKey ? 'Heute' : k === key(addDays(today, 1)) ? 'Morgen' : null);
+  const dayLabel = (k) => nearDay(k) || dfShort.format(fromKey(k));
 
-  /* ---------- Uhr: echte Zeit während der Öffnungszeit, sonst nächster Werktag 09:40 ---------- */
-  const real = new Date();
-  const realMin = real.getHours() * 60 + real.getMinutes();
-  let today = new Date(real.getFullYear(), real.getMonth(), real.getDate());
-  let simulated = false;
-  let nowMin = realMin;
-  if (today.getDay() === 0 || realMin < OPEN || realMin >= closeOf(today)) {
-    simulated = true;
-    if (today.getDay() === 0 || realMin >= closeOf(today)) { do { today = addDays(today, 1); } while (today.getDay() === 0); }
-    nowMin = 9 * 60 + 40;
+  /* ---------- Einstellungen: eine Quelle für Werkstatt, Zeiten und Leistungen ---------- */
+  const STORE = 'werkstattplaner';
+  function readSettings(o) {
+    const d = defaults();
+    if (!o || typeof o !== 'object') return d;
+    const text = (v, fallback) => (typeof v === 'string' && v.trim() ? v.trim() : fallback);
+    const some = (v, max) => { const a = Array.isArray(v) ? [...new Set(v.filter((x) => Number.isInteger(x) && x >= 0 && x < max))] : []; return a.length ? a : null; };
+    const hours = {};
+    for (let wd = 0; wd < 7; wd++) {
+      const h = o.hours && o.hours[wd];
+      if (Array.isArray(h) && h.length === 2 && h.every((m) => Number.isInteger(m) && m % STEP === 0) && h[0] >= 0 && h[0] < h[1] && h[1] <= 1440) hours[wd] = [h[0], h[1]];
+    }
+    const services = (Array.isArray(o.services) ? o.services : []).filter((x) => x && typeof x.name === 'string' && x.name.trim() && LENS.includes(x.dur)).map((x) => {
+      const lanes = some(x.lanes, d.lanes.length);
+      return { name: x.name.trim(), dur: x.dur, days: some(x.days, 7), lanes: lanes && lanes.length < d.lanes.length ? lanes : null };
+    });
+    const absences = !Array.isArray(o.absences) ? d.absences
+      : o.absences.filter((x) => x && isKey(x.from) && isKey(x.to) && x.from <= x.to && (x.lane == null || (Number.isInteger(x.lane) && d.lanes[x.lane])))
+        .map((x) => ({ lane: x.lane ?? null, from: x.from, to: x.to, label: text(x.label, '') }));
+    return {
+      shop: text(o.shop, d.shop),
+      lanes: d.lanes.map((l, i) => { const x = (Array.isArray(o.lanes) && o.lanes[i]) || {}; return { name: text(x.name, l.name), place: text(x.place, l.place) }; }),
+      hours: o.hours && typeof o.hours === 'object' ? hours : d.hours,
+      services: services.length ? services : d.services,
+      absences,
+    };
   }
-  const todayKey = key(today);
+  let settings;
+  try { settings = readSettings(JSON.parse(localStorage.getItem(STORE))); } catch (_) { settings = defaults(); }
+  function saveSettings() {
+    try { localStorage.setItem(STORE, JSON.stringify(settings)); return true; } catch (_) { return false; }
+  }
+  const svcOf = (name) => settings.services.find((s) => s.name === name);
+  const dayOk = (s, k) => !s.days || s.days.includes(fromKey(k).getDay());
+  const laneOk = (s, lane) => !s.lanes || s.lanes.includes(lane);
+  const advs = (days) => [...days].sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map((wd) => WD[wd].adv);
+  const laneNames = (lanes) => lanes.map((i) => settings.lanes[i].name);
+
+  /* ---------- Verfügbarkeit: nur hier werden Öffnungszeiten und Abwesenheiten gelesen ---------- */
+  // Ein Eintrag für die ganze Werkstatt geht dem eines Mechanikers vor.
+  function absenceIn(s, k, lane) {
+    const hit = s.absences.filter((x) => (x.lane == null || x.lane === lane) && x.from <= k && k <= x.to);
+    return hit.find((x) => x.lane == null) || hit[0] || null;
+  }
+  function windowIn(s, k, lane) {
+    const h = s.hours[fromKey(k).getDay()];
+    return h && !absenceIn(s, k, lane) ? { open: h[0], close: h[1] } : null;
+  }
+  function dayWindowIn(s, k) {
+    const ws = s.lanes.map((_, lane) => windowIn(s, k, lane)).filter(Boolean);
+    return ws.length ? { open: Math.min(...ws.map((w) => w.open)), close: Math.max(...ws.map((w) => w.close)) } : null;
+  }
+  function nextOpenIn(s, d) {
+    for (let i = 0; i < 366; i++, d = addDays(d, 1)) if (dayWindowIn(s, key(d))) return d;
+    return null;
+  }
+  const windowOf = (k, lane) => windowIn(settings, k, lane);
+  const laneWindows = (k) => settings.lanes.map((_, lane) => windowOf(k, lane));
+  const dayWindow = (k) => dayWindowIn(settings, k);
+  const nextOpenDay = (d) => nextOpenIn(settings, d);
+  function shutWord(k, lane) {
+    const x = absenceIn(settings, k, lane);
+    return (dayWindow(k) ? 'nicht da' : 'geschlossen') + (x && x.label ? ' · ' + x.label : '');
+  }
+  // Wer an einem offenen Wochentag fehlt und warum: ein Wort für die ganze Werkstatt, sonst eines je Mechaniker.
+  function away(k) {
+    if (!settings.hours[fromKey(k).getDay()]) return [];
+    const xs = settings.lanes.map((_, lane) => absenceIn(settings, k, lane));
+    if (xs.every((x) => x && x.lane == null)) return [xs[0].label || 'geschlossen'];
+    return xs.map((x, lane) => x && settings.lanes[lane].name + ': ' + (x.label || 'nicht da')).filter(Boolean);
+  }
+  const capacity = (k) => laneWindows(k).reduce((sum, w) => sum + (w ? w.close - w.open : 0), 0);
+  const openWeekdays = () => [1, 2, 3, 4, 5, 6, 0].filter((wd) => settings.hours[wd]);
+  let boardFrom, boardTo;
+  function fitBoard() {
+    const h = Object.values(settings.hours);
+    let lo = h.length ? Math.min(...h.map((x) => x[0])) : 9 * 60, hi = h.length ? Math.max(...h.map((x) => x[1])) : 17 * 60;
+    // Eigene Termine von vor einer Zeitänderung bleiben auf der Tafel sichtbar.
+    for (const a of A) { lo = Math.min(lo, a.start); hi = Math.max(hi, a.start + a.dur); }
+    boardFrom = Math.max(0, Math.floor(lo / 60) * 60 - 60);
+    boardTo = Math.min(1440, Math.ceil(hi / 60) * 60 + 60);
+  }
+
+  /* ---------- Uhr: echte Zeit im heutigen Zeitfenster, sonst nächster offener Tag 40 Minuten nach Öffnung ---------- */
+  function clockIn(s) {
+    const real = new Date(), realMin = real.getHours() * 60 + real.getMinutes();
+    const d0 = new Date(real.getFullYear(), real.getMonth(), real.getDate()), w0 = dayWindowIn(s, key(d0));
+    const next = w0 && realMin >= w0.open && realMin < w0.close ? null : nextOpenIn(s, w0 && realMin < w0.open ? d0 : addDays(d0, 1));
+    return { today: next || d0, simulated: !!next, nowMin: next ? dayWindowIn(s, key(next)).open + 40 : realMin };
+  }
+  let today, todayKey, nowMin, simulated;
+  function setClock() {
+    ({ today, simulated, nowMin } = clockIn(settings));
+    todayKey = key(today);
+  }
+  setClock();
 
   /* ---------- Erfundene Kundschaft und Termine ---------- */
   const CUSTOMERS = [];
@@ -590,39 +867,55 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
 
   const A = [], BY = new Map();
   let seq = 1;
-  for (let off = -42; off <= 42; off++) {
-    const d = addDays(today, off);
-    if (d.getDay() === 0) continue;
-    const k = key(d), r = rng('tag' + k), end = closeOf(d), used = new Set();
-    LANES.forEach((_, lane) => {
-      const tyre = lane === 3;
-      let cur = WORK_START + pick(r, [0, 0, 15, 30]);
-      for (;;) {
-        const [svc, dd] = pick(r, tyre ? TYRE : SERVICES);
-        if (cur + dd > end) break;
-        let c = pick(r, CUSTOMERS);
-        for (let t = 0; t < 6 && used.has(c); t++) c = pick(r, CUSTOMERS);
-        used.add(c);
-        A.push({ id: seq++, key: k, lane, start: cur, dur: dd, c, service: svc, note: pick(r, NOTES), status: null });
-        cur += dd + pick(r, tyre ? [0, 0, 15, 15, 30, 45] : [15, 30, 45, 60, 90, 120]);
-        if (!tyre && r() < 0.12) break;
-      }
-    });
-  }
-  // Damit die Suche nach „bauer“ im Gespräch etwas zeigt: Sabine Bauer heute, Bauer Gartenbau in drei Tagen.
-  (() => {
-    const sab = CUSTOMERS.find((c) => c.name === 'Sabine Bauer');
-    const gart = CUSTOMERS.find((c) => c.name === 'Bauer Gartenbau GmbH');
-    const place = (k, lane, start, len, c, svc, note) => {
-      for (let i = A.length - 1; i >= 0; i--) { const x = A[i]; if (x.key === k && ((x.lane === lane && x.start < start + len && start < x.start + x.dur) || x.c === c)) A.splice(i, 1); }
-      A.push({ id: seq++, key: k, lane, start, dur: len, c, service: svc, note, status: null });
+  const SEED_BACK = 42, SEED_AHEAD = 63;
+  const LOADS = [.95, .95, .85, .6, .5, .5, .3, .1];
+  const clash = (k, lane, start, len, except) => A.find((x) => x.key === k && x.lane === lane && x.id !== except && x.start < start + len && start < x.start + x.dur);
+  function seed() {
+    for (let i = A.length - 1; i >= 0; i--) if (!A[i].fresh) { BY.delete(A[i].id); A.splice(i, 1); }
+    const add = (k, lane, start, len, c, service, note) => A.push({ id: seq++, key: k, lane, start, dur: len, c, service, note, status: null });
+    for (let off = -SEED_BACK; off <= SEED_AHEAD; off++) {
+      const k = key(addDays(today, off)), r = rng('tag' + k), used = new Set();
+      // Auslastung schwankt mit Absicht: volle, halbe und fast leere Tage. Heute ist nie leer.
+      const load = Math.max(off ? 0 : .6, pick(r, LOADS)), solo = load > .3 ? -1 : Math.floor(r() * settings.lanes.length);
+      settings.lanes.forEach((_, lane) => {
+        const w = windowOf(k, lane);
+        if (!w || (solo >= 0 && solo !== lane)) return;
+        const budget = load * (w.close - w.open), can = settings.services.filter((s) => dayOk(s, k) && laneOk(s, lane));
+        let at = w.open + (load > .8 ? 0 : pick(r, [0, 15, 30, 60])), sum = 0;
+        while (sum < budget) {
+          const fits = can.filter((s) => at + s.dur <= w.close && sum + s.dur <= budget + 30);
+          if (!fits.length) break;
+          const s = pick(r, fits), own = clash(k, lane, at, s.dur);
+          if (own) { at = own.start + own.dur; continue; }
+          let c = pick(r, CUSTOMERS);
+          for (let t = 0; t < 6 && used.has(c); t++) c = pick(r, CUSTOMERS);
+          used.add(c);
+          add(k, lane, at, s.dur, c, s.name, pick(r, NOTES));
+          sum += s.dur;
+          at += s.dur + pick(r, load > .8 ? [0, 0, 15] : [0, 15, 30, 45]);
+        }
+      });
+    }
+    // Damit die Suche nach „bauer“ im Gespräch etwas zeigt: Sabine Bauer heute, Bauer Gartenbau am dritten Tag danach.
+    const put = (d, lane, after, len, name, service, note) => {
+      const k = d && key(d), w = d && windowOf(k, lane);
+      if (!w || w.close - w.open < len) return;
+      const c = CUSTOMERS.find((x) => x.name === name), start = Math.min(w.open + after, w.close - len);
+      for (let i = A.length - 1; i >= 0; i--) { const x = A[i]; if (!x.fresh && x.key === k && ((x.lane === lane && x.start < start + len && start < x.start + x.dur) || x.c === c)) A.splice(i, 1); }
+      if (!clash(k, lane, start, len)) add(k, lane, start, len, c, service, note);
     };
-    place(todayKey, 0, 9 * 60 + 30, 90, sab, 'Auspuff', 'Kundin wartet');
-    let d3 = addDays(today, 3); if (d3.getDay() === 0) d3 = addDays(d3, 1);
-    place(key(d3), 3, 11 * 60, 30, gart, 'Reifenwechsel', '');
-    const past = addDays(today, -35).getDay() === 0 ? addDays(today, -34) : addDays(today, -35);
-    place(key(past), 1, 8 * 60, 45, sab, 'Ölwechsel', '');
-  })();
+    put(today, 0, 30, 90, 'Sabine Bauer', 'Auspuff', 'Kundin wartet');
+    put(nextOpenDay(addDays(today, 3)), 1, 120, 30, 'Bauer Gartenbau GmbH', 'Reifenwechsel', '');
+    put(nextOpenDay(addDays(today, -35)), 1, 30, 45, 'Sabine Bauer', 'Ölwechsel', '');
+    A.forEach(enroll);
+    saveAppts();
+  }
+  // Ohne eigenen Stand folgt ein Beispieltermin der Uhr.
+  function enroll(a) {
+    if (a.status == null) { a.status = autoStatus(a); a.since = a.status === 'work' ? a.start + 4 : null; }
+    BY.set(a.id, a);
+    index(a);
+  }
 
   function autoStatus(a) {
     if (a.key < todayKey) return 'gone';
@@ -635,38 +928,75 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     return 'plan';
   }
   function index(a) {
-    a.words = norm([a.c.name, a.c.car, a.service, a.note, LANES[a.lane].name].join(' ')).split(/[^a-z0-9]+/).filter(Boolean);
+    a.words = norm([a.c.name, a.c.car, a.service, a.note, settings.lanes[a.lane].name].join(' ')).split(/[^a-z0-9]+/).filter(Boolean);
     a.pl = norm(a.c.plate).replace(/[^a-z0-9]/g, '');
     a.ph = a.c.phone.replace(/\D/g, '');
   }
-  A.forEach((a) => { a.status = autoStatus(a); a.since = a.status === 'work' ? a.start + 4 : null; index(a); BY.set(a.id, a); });
+
+  /* ---------- Termine merken: Stand im Browser, gültig für diesen Tag und diese Zeiten ---------- */
+  const KEEP = STORE + '-termine';
+  const CID = new Map(CUSTOMERS.map((c, i) => [c, i]));
+  const seedBasis = () => JSON.stringify([settings.hours, settings.absences]);
+  function saveAppts() {
+    // Bekannte Kunden als Nummer, damit sie nach dem Laden dieselben bleiben. Stand nur, wenn ihn jemand gesetzt hat.
+    const list = A.map((a) => ({ id: a.id, key: a.key, lane: a.lane, start: a.start, dur: a.dur, c: CID.get(a.c) ?? a.c, service: a.service, note: a.note, fresh: !!a.fresh, status: a.fresh || a.manual ? a.status : null, since: a.since }));
+    try { localStorage.setItem(KEEP, JSON.stringify({ today: todayKey, basis: seedBasis(), list })); } catch (_) {}
+  }
+  function readAppt(x) {
+    const int = Number.isInteger, text = (v) => (typeof v === 'string' ? v : '');
+    const c = x && (int(x.c) ? CUSTOMERS[x.c] : x.c && typeof x.c.name === 'string' && x.c.name ? { name: x.c.name, phone: text(x.c.phone), plate: text(x.c.plate), car: text(x.c.car) } : null);
+    if (!c || !int(x.id) || !isKey(x.key) || !int(x.lane) || !settings.lanes[x.lane] || !int(x.start) || !int(x.dur) || x.dur <= 0 || typeof x.service !== 'string') return null;
+    const status = Object.hasOwn(ST, x.status) ? x.status : null, fresh = x.fresh === true;
+    return { id: x.id, key: x.key, lane: x.lane, start: x.start, dur: x.dur, c, service: x.service, note: text(x.note), status, since: int(x.since) ? x.since : null, fresh, manual: !fresh && !!status };
+  }
+  function loadAppts() {
+    let snap = null;
+    try { snap = JSON.parse(localStorage.getItem(KEEP)); } catch (_) {}
+    const ids = new Set(), list = snap && Array.isArray(snap.list) ? snap.list.map(readAppt).filter((a) => a && !ids.has(a.id) && ids.add(a.id)) : null;
+    const same = list && snap.today === todayKey && snap.basis === seedBasis();
+    if (list) A.push(...(same ? list : list.filter((a) => a.fresh && a.key >= todayKey)));
+    seq = A.reduce((m, a) => Math.max(m, a.id), 0) + 1;
+    if (same) A.forEach(enroll); else seed();
+  }
+  // Jede Änderung an Terminen läuft hier durch: für Rückgängig merken, dann speichern.
+  function changed(label, back) {
+    undoStack.push({ label, fn: back });
+    if (undoStack.length > 30) undoStack.shift();
+    saveAppts();
+  }
+  loadAppts();
+  fitBoard();
 
   /* ---------- Zustand ---------- */
   let cur = today;
-  let view = 'idle';          // idle | search | detail | form
+  let mode = 'day';           // day | month
+  let view = 'idle';          // idle | overview | search | detail | form | finder
   let selId = null;           // ausgewählte Karte
   let fromSearch = false;
   let searchHome = null;      // Tag vor der Suche
   let active = -1;            // markierter Treffer
   let hits = [];
-  let formState = null;       // { mode, id, dirty }
+  let formState = null;       // { mode, id, dirty, fromFinder }
+  let finder = null;          // { service, from, part, lane, limit, shown, days, active, home, draft, dirty, back }
   const undoStack = [];
 
-  const plateEl = $('plate'), scroller = $('scroller'), panel = $('panel'), q = $('q');
+  const plateEl = $('plate'), scroller = $('scroller'), monthEl = $('month'), panel = $('panel'), q = $('q');
 
-  const clash = (k, lane, start, len, except) => A.find((x) => x.key === k && x.lane === lane && x.id !== except && x.start < start + len && start < x.start + x.dur);
   const dayAppts = (k) => A.filter((a) => a.key === k);
   const booked = (k) => dayAppts(k).reduce((s, a) => s + a.dur, 0);
-  const capacity = (d) => (d.getDay() === 0 ? 0 : LANES.length * (closeOf(d) - WORK_START));
   const fmtHours = (min) => (min / 60).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+  function dayStat(k) {
+    const cap = capacity(k), b = booked(k);
+    return { cap, n: dayAppts(k).length, free: Math.max(0, cap - b), load: cap ? Math.min(100, Math.round((b / cap) * 100)) : 0, off: away(k) };
+  }
 
   function laneState(k, lane) {
-    const list = dayAppts(k).filter((a) => a.lane === lane).sort((x, y) => x.start - y.start);
+    const list = dayAppts(k).filter((a) => a.lane === lane).sort((x, y) => x.start - y.start), w = windowOf(k, lane);
+    if (!w) return { cls: '', text: shutWord(k, lane) };
     if (k !== todayKey) {
       const b = list.reduce((s, a) => s + a.dur, 0);
-      return { cls: '', text: list.length + ' Termine · ' + fmtHours(b) + ' Std.' };
+      return { cls: '', text: nAppts(list.length) + ' · ' + fmtHours(b) + ' Std.' };
     }
-    const close = closeOf(today);
     const busy = list.find((a) => a.start <= nowMin && nowMin < a.start + a.dur);
     if (busy) {
       let until = busy.start + busy.dur;
@@ -674,33 +1004,37 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       return { cls: 'busy', text: 'belegt bis ' + hm(until) };
     }
     const next = list.find((a) => a.start > nowMin);
-    if (nowMin >= close) return { cls: '', text: 'Feierabend' };
+    if (nowMin >= w.close) return { cls: '', text: 'Feierabend' };
     return { cls: 'free', text: next ? 'frei bis ' + hm(next.start) : 'frei bis Feierabend' };
   }
 
   /* ---------- Kopfleiste und Woche ---------- */
   function renderBar() {
-    $('dateTitle').textContent = dfTitle.format(cur);
-    $('datePick').value = key(cur);
-    const k = key(cur), list = dayAppts(k);
-    if (k === todayKey) {
+    $('shop').textContent = settings.shop;
+    document.title = settings.shop + ' · Werkstattplaner';
+    const month = mode === 'month', k = key(cur);
+    $('dateTitle').textContent = (month ? dfMonth : dfTitle).format(cur);
+    $('datePick').value = k;
+    $('moNav').hidden = !month; $('week').hidden = month; scroller.hidden = month; monthEl.hidden = !month;
+    $('viewDay').setAttribute('aria-pressed', String(!month)); $('viewMonth').setAttribute('aria-pressed', String(month));
+    if (month || k === todayKey) {
+      const list = dayAppts(todayKey);
       const inHouse = list.filter((a) => a.status === 'da' || a.status === 'work' || a.status === 'done').length;
       const ready = list.filter((a) => a.status === 'done').length;
-      $('sum').innerHTML = '<span><b>' + inHouse + '</b> im Haus</span><span><b>' + ready + '</b> fertig zur Abholung</span>';
+      $('sum').innerHTML = '<span><b>' + inHouse + '</b> im Haus</span><span><b>' + ready + '</b> fertig<span class="lg"> zur Abholung</span></span>';
     } else {
-      const free = Math.max(0, capacity(cur) - booked(k));
-      $('sum').innerHTML = '<span><b>' + list.length + '</b> Termine</span><span><b>' + fmtHours(free) + '</b> Std. frei</span>';
+      const s = dayStat(k);
+      $('sum').innerHTML = '<span><b>' + s.n + '</b> ' + (s.n === 1 ? 'Termin' : 'Termine') + '</span><span><b>' + fmtHours(s.free) + '</b> Std. frei</span>';
     }
     $('todayBtn').disabled = false;
     $('demo').innerHTML = 'Beispieldaten' + (simulated ? '<span> · <span class="dt">Uhrzeit </span>' + hm(nowMin) + ' simuliert</span>' : '');
     const mon = monday(cur);
     let h = '<button type="button" class="wk-nav" data-wk="-7" aria-label="Vorherige Woche">' + ICON.left + '</button>';
-    for (let i = 0; i < 6; i++) {
-      const d = addDays(mon, i), dk = key(d), cap = capacity(d), b = booked(dk);
-      const free = Math.max(0, cap - b), load = cap ? Math.min(100, Math.round((b / cap) * 100)) : 0;
-      h += '<button type="button" class="wd" data-k="' + dk + '"' + (dk === k ? ' aria-current="date"' : '') + ' aria-label="' + esc(dfTitle.format(d) + ', ' + fmtHours(free) + ' Stunden frei') + '">' +
+    for (const wd of openWeekdays()) {
+      const d = addDays(mon, (wd + 6) % 7), dk = key(d), s = dayStat(dk), shut = s.off.length === 1 ? s.off[0] : 'geschlossen';
+      h += '<button type="button" class="wd" data-k="' + dk + '"' + (dk === k ? ' aria-current="date"' : '') + ' aria-label="' + esc(dfTitle.format(d) + ', ' + (s.cap ? fmtHours(s.free) + ' Stunden frei' : shut)) + '">' +
         '<span class="wd-d">' + esc(dfDay.format(d)) + ' ' + d.getDate() + (dk === todayKey ? '<small>heute</small>' : '') + '</span>' +
-        '<span class="wd-f">' + fmtHours(free) + ' Std. frei</span><span class="wd-m" aria-hidden="true"><i style="width:' + load + '%"></i></span></button>';
+        '<span class="wd-f">' + (s.cap ? fmtHours(s.free) + ' Std. frei' : esc(shut)) + '</span><span class="wd-m" aria-hidden="true"><i style="width:' + s.load + '%"></i></span></button>';
     }
     h += '<button type="button" class="wk-nav" data-wk="7" aria-label="Nächste Woche">' + ICON.right + '</button>';
     $('week').innerHTML = h;
@@ -720,33 +1054,34 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
         (hgt >= headPx + 40 ? '<div class="card-line">' + esc(a.c.car) + (a.c.plate ? ' · ' + esc(a.c.plate) : '') + '</div>' : '') +
         (hgt >= headPx + 57 ? '<div class="card-line">' + esc(a.service) + (a.note ? ' · <b>' + esc(a.note) + '</b>' : '') + '</div>' : '');
     }
-    return '<div class="card' + (short ? ' short' : '') + (a.id === selId ? ' is-sel' : '') + '" data-id="' + a.id + '" data-s="' + a.status + '" style="top:' + ((a.start - OPEN) * H / 60 + 2) + 'px;height:' + hgt + 'px">' +
+    return '<div class="card' + (short ? ' short' : '') + (a.id === selId ? ' is-sel' : '') + '" data-id="' + a.id + '" data-s="' + a.status + '" style="top:' + ((a.start - boardFrom) * H / 60 + 2) + 'px;height:' + hgt + 'px">' +
       inner + '<button type="button" class="card-open" aria-label="' + esc(label) + '" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight" aria-describedby="cardHelp"></button></div>';
   }
   function renderBoard() {
-    const H = hourPx(), k = key(cur), list = dayAppts(k), closed = cur.getDay() === 0;
-    const total = ((BOARD_END - OPEN) * H) / 60;
+    const H = hourPx(), k = key(cur), list = dayAppts(k);
+    const y = (min) => ((min - boardFrom) * H) / 60, total = y(boardTo);
     let h = '<div class="corner" aria-hidden="true"></div>';
-    LANES.forEach((l, i) => {
+    settings.lanes.forEach((l, i) => {
       const s = laneState(k, i);
-      h += '<div class="lh ' + s.cls + '"><strong>' + esc(l.name) + '</strong><span>' + esc(l.who) + '</span><em><i aria-hidden="true"></i>' + s.text + '</em></div>';
+      h += '<div class="lh ' + s.cls + '"><strong>' + esc(l.name) + '</strong><span>' + esc(l.place) + '</span><em><i aria-hidden="true"></i>' + esc(s.text) + '</em></div>';
     });
     h += '<div class="times" style="height:' + total + 'px" aria-hidden="true">';
-    const showNow = k === todayKey && nowMin >= OPEN && nowMin <= BOARD_END;
-    for (let t = OPEN; t < BOARD_END; t += 60) {
+    const showNow = k === todayKey && nowMin >= boardFrom && nowMin <= boardTo;
+    for (let t = boardFrom; t < boardTo; t += 60) {
       if (showNow && Math.abs(t - nowMin) < 14) continue;
-      h += '<span' + (t === OPEN ? ' class="first"' : '') + ' style="top:' + ((t - OPEN) * H) / 60 + 'px">' + hm(t) + '</span>';
+      h += '<span' + (t === boardFrom ? ' class="first"' : '') + ' style="top:' + y(t) + 'px">' + hm(t) + '</span>';
     }
-    if (showNow) h += '<span class="now-t" style="top:' + ((nowMin - OPEN) * H) / 60 + 'px">' + hm(nowMin) + '</span>';
+    if (showNow) h += '<span class="now-t" style="top:' + y(nowMin) + 'px">' + hm(nowMin) + '</span>';
     h += '</div>';
-    LANES.forEach((l, i) => {
-      h += '<div class="lane' + (closed ? ' closed' : '') + '" data-lane="' + i + '" role="group" aria-label="' + esc(l.name + ', ' + l.who) + '" style="height:' + total + 'px">' +
-        list.filter((a) => a.lane === i).sort((x, y) => x.start - y.start).map((a) => cardHtml(a, H)).join('') + '</div>';
+    settings.lanes.forEach((l, i) => {
+      const w = windowOf(k, i), shut = w ? [[boardFrom, w.open], [w.close, boardTo]] : [[boardFrom, boardTo]];
+      h += '<div class="lane" data-lane="' + i + '" role="group" aria-label="' + esc(l.name + ', ' + l.place + ', ' + (w ? 'geöffnet von ' + hm(w.open) + ' bis ' + hm(w.close) + ' Uhr' : shutWord(k, i))) + '" style="height:' + total + 'px">' +
+        shut.map(([from, to]) => '<div class="shut" style="top:' + y(from) + 'px;height:' + (y(to) - y(from)) + 'px"></div>').join('') +
+        list.filter((a) => a.lane === i).sort((x, z) => x.start - z.start).map((a) => cardHtml(a, H)).join('') + '</div>';
     });
-    if (k === todayKey && nowMin >= OPEN && nowMin <= BOARD_END) {
-      h += '<div class="now" data-now style="top:' + (((nowMin - OPEN) * H) / 60) + 'px"></div>';
-    }
-    h += '<p class="sr" id="cardHelp">Mit Alt und Pfeiltasten verschieben: hoch und runter um 15 Minuten, links und rechts auf einen anderen Platz.</p>';
+    if (showNow) h += '<div class="now" data-now style="top:' + y(nowMin) + 'px"></div>';
+    h += '<p class="sr" id="cardHelp">Mit Alt und Pfeiltasten verschieben: hoch und runter um 15 Minuten, links und rechts zum anderen Mechaniker.</p>';
+    plateEl.style.setProperty('--lanes', settings.lanes.length);
     plateEl.innerHTML = h;
     const head = plateEl.querySelector('.lh');
     const off = head ? head.offsetHeight : 0;
@@ -755,7 +1090,40 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (now) now.style.top = off + parseFloat(now.style.top) - 1 + 'px';
     drawDraftGhost();
   }
-  function render() { renderBar(); renderBoard(); renderPanel(); }
+
+  /* ---------- Monat ---------- */
+  function renderMonth() {
+    const days = openWeekdays(), y = cur.getFullYear(), m = cur.getMonth(), weeks = [];
+    if (!days.length) { monthEl.innerHTML = '<p class="empty">An keinem Wochentag ist geöffnet. Die Öffnungszeiten stehen in den Einstellungen.</p>'; return; }
+    for (let mon = monday(new Date(y, m, 1)); mon <= new Date(y, m + 1, 0); mon = addDays(mon, 7)) {
+      const row = days.map((wd) => addDays(mon, (wd + 6) % 7)).map((d) => (d.getMonth() === m ? d : null));
+      if (row.some(Boolean)) weeks.push(row);
+    }
+    const keys = weeks.flat().filter(Boolean).map(key), tab = keys.includes(key(cur)) ? key(cur) : keys[0];
+    const fits = view === 'finder' ? finder.days : null, slot = fits && finder.shown[finder.active], sel = BY.get(selId);
+    const on = slot ? slot.day : sel ? sel.key : null;
+    monthEl.innerHTML = '<div class="mo" role="grid" aria-label="' + esc(dfMonth.format(cur)) + '" style="--days:' + days.length + '">' +
+      '<div role="row">' + days.map((wd) => '<span class="mo-h" role="columnheader" aria-label="' + WD[wd].long + '">' + WD[wd].short + '</span>').join('') + '</div>' +
+      weeks.map((row) => '<div role="row">' + row.map((d) => {
+        if (!d) return '<span role="gridcell"></span>';
+        const k = key(d), s = dayStat(k), fit = fits && fits.get(k), count = s.n ? nAppts(s.n) : s.cap ? 'keine Termine' : '';
+        const said = [s.cap ? fmtHours(s.free) + ' Stunden frei' : '', ...s.off, count, fit != null ? 'frei ab ' + hm(fit) + ' Uhr' : ''].filter(Boolean);
+        return '<div role="gridcell"><button type="button" class="md' + (s.cap ? '' : ' closed') + (k === on ? ' on' : '') + '" data-k="' + k + '" tabindex="' + (k === tab ? 0 : -1) + '"' +
+          (k === todayKey ? ' aria-current="date"' : '') + ' aria-label="' + esc(dfTitle.format(d) + ', ' + said.join(', ')) + '">' +
+          '<span class="md-d">' + d.getDate() + (k === todayKey ? '<small>heute</small>' : '') + '</span>' +
+          (s.cap ? '<span class="md-f">' + fmtHours(s.free) + ' Std. frei</span><span class="wd-m" aria-hidden="true"><i style="width:' + s.load + '%"></i></span>' : '') +
+          s.off.map((t) => '<span class="md-a">' + esc(t) + '</span>').join('') +
+          (count ? '<span class="md-n">' + count + '</span>' : '') +
+          (fit != null ? '<span class="md-s">' + ICON.ok + 'ab ' + hm(fit) + '</span>' : '') + '</button></div>';
+      }).join('') + '</div>').join('') + '</div>';
+  }
+  function renderMain() { if (mode === 'month') renderMonth(); else renderBoard(); }
+  function render() { renderBar(); renderMain(); renderPanel(); }
+  function setMode(m) { mode = m; render(); }
+  function showDay() {
+    const k = key(cur);
+    scrollToMinute(k === todayKey ? nowMin : (dayWindow(k) || { open: boardFrom + 60 }).open, false);
+  }
 
   const sheetMode = () => matchMedia('(max-width: 68.75rem)').matches && panel.dataset.view !== 'idle';
   function visibleBoard() {
@@ -763,32 +1131,37 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     const top = scroller.getBoundingClientRect().top;
     return Math.max(96, Math.min(scroller.clientHeight, innerHeight - panel.offsetHeight - top));
   }
-  function scrollToMinute(min, smooth) {
+  const scrollHow = (smooth) => (smooth && !reduceMotion() ? 'smooth' : 'auto');
+  function minuteTop(min) {
     const head = plateEl.querySelector('.lh');
     const hh = head ? head.offsetHeight : 0;
-    const y = ((min - OPEN) * hourPx()) / 60 + hh;
+    const y = ((min - boardFrom) * hourPx()) / 60 + hh;
     const vis = visibleBoard();
-    scroller.scrollTo({ top: Math.max(0, y - hh - Math.min(vis * 0.3, Math.max(8, (vis - hh) * 0.15))), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' });
+    return Math.max(0, y - hh - Math.min(vis * 0.3, Math.max(8, (vis - hh) * 0.15)));
+  }
+  function scrollToMinute(min, smooth) { scroller.scrollTo({ top: minuteTop(min), behavior: scrollHow(smooth) }); }
+  function reveal(el, start, smooth) {
+    const head = plateEl.querySelector('.lh').offsetHeight, gutter = plateEl.querySelector('.times').offsetWidth;
+    const top = el.offsetTop + head, bottom = top + el.offsetHeight;
+    const lane = el.parentElement, lx = lane.offsetLeft, rx = lx + lane.offsetWidth;
+    // Ein Aufruf für beide Richtungen: Ein zweites weiches Rollen bricht das erste ab.
+    const to = {};
+    if (top - head < scroller.scrollTop || bottom > scroller.scrollTop + visibleBoard()) to.top = minuteTop(start);
+    if (lx < scroller.scrollLeft + gutter || rx > scroller.scrollLeft + scroller.clientWidth) to.left = Math.max(0, lx - gutter);
+    if ('top' in to || 'left' in to) scroller.scrollTo({ ...to, behavior: scrollHow(smooth) });
   }
   function revealCard(id, smooth) {
-    const el = plateEl.querySelector('.card[data-id="' + id + '"]');
-    if (!el) return null;
-    const a = BY.get(id);
-    const head = plateEl.querySelector('.lh').offsetHeight;
-    const top = el.offsetTop + head, bottom = top + el.offsetHeight;
-    if (top - head < scroller.scrollTop || bottom > scroller.scrollTop + visibleBoard()) scrollToMinute(a.start, smooth);
-    const lane = el.parentElement;
-    const lx = lane.offsetLeft, rx = lx + lane.offsetWidth;
-    if (lx < scroller.scrollLeft + 56 || rx > scroller.scrollLeft + scroller.clientWidth) scroller.scrollTo({ left: Math.max(0, lx - 56), behavior: smooth && !reduceMotion() ? 'smooth' : 'auto' });
+    const el = mode === 'day' && plateEl.querySelector('.card[data-id="' + id + '"]');
+    if (el) reveal(el, BY.get(id).start, smooth);
     return el;
   }
-  function setDay(d) { cur = d; renderBar(); renderBoard(); }
+  function setDay(d) { cur = d; renderBar(); renderMain(); }
 
   /* ---------- Seitenleiste ---------- */
   const itemHtml = (a, toks, opts = {}) => {
     const hl = (t) => (toks ? highlight(t, toks) : esc(t));
     return '<button type="button" class="item" ' + (opts.role ? 'role="option" id="opt-' + a.id + '" aria-selected="' + !!opts.sel + '" tabindex="-1" ' : '') + 'data-go="' + a.id + '">' +
-      '<span class="i-when">' + esc(dayLabel(a.key)) + ' · ' + hm(a.start) + ' · ' + (toks ? highlight(LANES[a.lane].name, toks) : esc(LANES[a.lane].name)) + '</span>' +
+      '<span class="i-when">' + esc(dayLabel(a.key)) + ' · ' + hm(a.start) + ' · ' + hl(settings.lanes[a.lane].name) + '</span>' +
       '<span class="i-where"><span class="chip-st" data-s="' + a.status + '">' + GLYPH[a.status] + ST[a.status] + '</span></span>' +
       '<span class="i-name">' + hl(a.c.name) + '</span>' +
       '<span class="i-sub">' + hl(a.c.car) + (a.c.plate ? ' · ' + hl(a.c.plate) : '') + ' · ' + hl(a.service) + '</span></button>';
@@ -797,7 +1170,7 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     panel.dataset.view = view;
     if (view === 'search') return renderResults();
     if (view === 'detail') return renderDetail();
-    if (view === 'form') return; // Formular wird nur beim Öffnen gezeichnet, damit Eingaben erhalten bleiben
+    if (view === 'form' || view === 'finder') return; // Formular und Terminsuche werden nur beim Öffnen gezeichnet, damit Eingaben erhalten bleiben
     renderIdle();
     panel.dataset.view = view;
   }
@@ -809,11 +1182,12 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       '<div class="p-head"><h2 id="panelTitle" tabindex="-1">Heute im Blick</h2>' + (view === 'overview' ? '<button type="button" class="icon-btn" data-close-overview aria-label="Übersicht schließen">' + ICON.x + '</button>' : '') + '</div><div class="p-scroll">' +
       '<p class="grp">Fertig zur Abholung <small>' + ready.length + '</small></p>' + (ready.length ? ready.map(orowHtml).join('') : '<p class="empty">Gerade ist kein Fahrzeug fertig.</p>') +
       '<p class="grp">Kommt als Nächstes</p>' + (coming.length ? coming.map(orowHtml).join('') : '<p class="empty">Für heute ist nichts mehr geplant. Freie Zeit auf der Tafel anklicken, um einen Termin anzulegen.</p>') +
+      '<button type="button" class="btn quiet more" data-print>Tagesliste für ' + esc((nearDay(key(cur)) || '').toLowerCase() || dfShort.format(cur)) + ' drucken</button>' +
       '</div><div class="p-foot"><span><kbd>/</kbd> Suchen</span><span>Freie Zeit anklicken: neuer Termin</span>' + themeBtn() + '</div>';
   }
   function orowHtml(a) {
     return '<button type="button" class="orow" data-go="' + a.id + '"><span class="o-time">' + hm(a.start) + '</span>' +
-      '<span class="o-main"><b>' + esc(a.c.name) + '</b><span>' + esc(a.c.car) + (a.c.plate ? ' · ' + esc(a.c.plate) : '') + ' · ' + esc(LANES[a.lane].name) + '</span></span>' +
+      '<span class="o-main"><b>' + esc(a.c.name) + '</b><span>' + esc(a.c.car) + (a.c.plate ? ' · ' + esc(a.c.plate) : '') + ' · ' + esc(settings.lanes[a.lane].name) + '</span></span>' +
       '<span class="chip-st" data-s="' + a.status + '">' + GLYPH[a.status] + ST[a.status] + '</span></button>';
   }
   /* Hell und dunkel: ohne Einstellung folgt die Seite dem System */
@@ -877,7 +1251,7 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     let h = '<div class="p-head"><h2 id="panelTitle">' + (hits.total ? hits.total + (hits.total === 1 ? ' Treffer' : ' Treffer') + ' für „' + esc(v) + '“' : 'Keine Treffer') + '</h2><button type="button" class="icon-btn" data-close-search aria-label="Suche schließen">' + ICON.x + '</button></div>';
     h += '<div class="p-scroll">';
     if (!hits.total) {
-      h += '<p class="empty">Kein Termin passt zu „' + esc(v) + '“. Gesucht wurde in allen ' + A.length.toLocaleString('de-DE') + ' Terminen der letzten und nächsten sechs Wochen. Kennzeichen gehen auch ohne Bindestrich, Telefonnummern ab drei Ziffern.</p>';
+      h += '<p class="empty">Kein Termin passt zu „' + esc(v) + '“. Gesucht wurde in allen ' + A.length.toLocaleString('de-DE') + ' Terminen der letzten ' + SEED_BACK / 7 + ' und nächsten ' + SEED_AHEAD / 7 + ' Wochen. Kennzeichen gehen auch ohne Bindestrich, Telefonnummern ab drei Ziffern.</p>';
     } else {
       h += '<div role="listbox" id="results" aria-label="Treffer">';
       if (hits.coming) h += '<p class="grp" role="presentation">Kommende <small>' + hits.nComing + '</small></p>';
@@ -896,10 +1270,10 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (sel) sel.scrollIntoView({ block: 'nearest' });
   }
   function previewActive() {
-    if (active < 0) { selId = null; renderBoard(); return; }
+    if (active < 0) { selId = null; renderMain(); return; }
     const a = hits[active];
     selId = a.id;
-    if (key(cur) !== a.key) setDay(fromKey(a.key)); else renderBoard();
+    setDay(fromKey(a.key));
     revealCard(a.id, true);
   }
   function moveActive(d) {
@@ -929,7 +1303,8 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     fromSearch = !!viaSearch;
     selId = id;
     view = 'detail';
-    if (key(cur) !== a.key) setDay(fromKey(a.key)); else renderBoard();
+    mode = 'day';
+    setDay(fromKey(a.key));
     renderDetail();
     revealCard(id, true);
     const h = $('panelTitle');
@@ -948,7 +1323,7 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       '<h2 id="panelTitle" tabindex="-1" class="sr">Termin</h2>' +
       '<div class="p-scroll"><div class="detail" style="padding-top:1.25rem">' +
       '<div class="d-head"><div><h3 class="d-title">' + esc(a.c.name) + '</h3>' +
-      '<p class="d-meta">' + esc(dayLabel(a.key)) + ', ' + hm(a.start) + '–' + hm(a.start + a.dur) + ' · ' + esc(LANES[a.lane].name) + ' mit ' + esc(LANES[a.lane].who) + '</p></div>' +
+      '<p class="d-meta">' + esc(dayLabel(a.key)) + ', ' + hm(a.start) + '–' + hm(a.start + a.dur) + ' · ' + esc(settings.lanes[a.lane].name) + ', ' + esc(settings.lanes[a.lane].place) + '</p></div>' +
       '<button type="button" class="icon-btn" data-close aria-label="Details schließen">' + ICON.x + '</button></div>' +
       '<div class="d-state" data-s="' + a.status + '">' + GLYPH[a.status] + '<span>' + ST[a.status] + '</span>' + since + '</div>' +
       '<div class="d-actions">' + (nx ? '<button type="button" class="btn go" data-next>' + nx[1] + '</button>' : '') +
@@ -958,15 +1333,24 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       '<dt>Telefon</dt><dd>' + esc(a.c.phone || 'nicht hinterlegt') + '</dd><dt>Leistung</dt><dd>' + esc(a.service) + ', ' + dur(a.dur) + '</dd>' +
       (a.note ? '<dt>Notiz</dt><dd>' + esc(a.note) + '</dd>' : '') + '</dl>' +
       '<div class="d-links"><button type="button" class="btn quiet" data-move>Verschieben</button><button type="button" class="btn quiet" data-edit>Bearbeiten</button><button type="button" class="btn quiet danger" data-cancel>Absagen</button></div>' +
+      (MSG[a.status] ? '<section><h3 class="section-t">Nachricht an den Kunden<span class="tag">Vorschau</span></h3>' +
+        '<p class="msg-t"><small>' + (a.c.phone ? 'An ' + esc(a.c.phone) : 'Telefonnummer fehlt noch') + '</small>' + esc('Guten Tag ' + a.c.name + ', ' + MSG[a.status](a)) + '</p>' +
+        '<button type="button" class="btn quiet" data-msg>Nachricht senden</button></section>' : '') +
       '<section><h3 class="section-t">Weitere Termine dieses Fahrzeugs</h3>' + (hist.length ? '<div class="hist">' + hist.map((x) => itemHtml(x, null, { statusOnly: true })).join('') + '</div>' : '<p class="empty" style="margin:0">Das ist der erste Termin dieses Fahrzeugs.</p>') + '</section>' +
       '</div></div>';
   }
+  // Abholen geht bis zum Feierabend des heutigen Tages, auch wenn der Termin an einem anderen lag.
+  const MSG = {
+    plan: (a) => 'Erinnerung: ' + (nearDay(a.key) || dfTitle.format(fromKey(a.key))) + ', ' + hm(a.start) + ' Uhr, ' + a.service + ' bei ' + settings.shop + '. Wenn es nicht passt, rufen Sie bitte an.',
+    done: () => 'Ihr Fahrzeug ist fertig. Sie können es heute bis ' + hm(dayWindow(todayKey).close) + ' Uhr bei ' + settings.shop + ' abholen.',
+  };
   function setStatus(a, s, how) {
-    const prev = a.status, prevSince = a.since;
+    const prev = a.status, prevSince = a.since, prevManual = a.manual;
     if (prev === s) return;
     a.status = s;
+    a.manual = true;
     a.since = s === 'work' ? (a.key === todayKey ? nowMin : a.start) : a.since;
-    pushUndo(a.c.name + ': ' + ST[prev], () => { a.status = prev; a.since = prevSince; refresh(a.id); });
+    changed(a.c.name + ': ' + ST[prev], () => { a.status = prev; a.since = prevSince; a.manual = prevManual; refresh(a.id); });
     const sel = ['.card[data-id="' + a.id + '"] .card-head', '.d-state'];
     const old = sel.map((x) => { const el = document.querySelector(x); if (!el) return null; const cs = getComputedStyle(el); return { bg: cs.backgroundColor, fg: cs.color }; });
     refresh(a.id);
@@ -980,9 +1364,10 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (how === 'next') { const b = panel.querySelector('[data-next]') || $('stSel'); if (b) b.focus(); }
   }
   function refresh(focusId) {
-    renderBar(); renderBoard();
+    renderBar(); renderMain();
     if (view === 'detail') renderDetail();
     else if (view === 'search') runSearchKeepActive();
+    else if (view === 'finder') showFinder();
     else if (view === 'idle' || view === 'overview') renderPanel();
     if (focusId) revealCard(focusId, false);
   }
@@ -993,18 +1378,22 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   }
 
   /* Formular */
-  function openForm(mode, pre) {
+  function openForm(mode, pre = {}) {
     const a = mode === 'edit' ? BY.get(pre.id) : null;
-    const d = a ? { name: a.c.name, phone: a.c.phone, plate: a.c.plate, car: a.c.car, service: a.service, len: a.dur, day: a.key, start: a.start, lane: a.lane, note: a.note }
-      : { name: '', phone: '', plate: '', car: '', service: pre && pre.lane === 3 ? 'Reifenwechsel' : 'Inspektion', len: pre && pre.lane === 3 ? 30 : 90, day: pre && pre.day ? pre.day : key(cur), start: pre && pre.start != null ? pre.start : nextFreeStart(key(cur)), lane: pre && pre.lane != null ? pre.lane : 0, note: '' };
-    formState = { mode, id: a ? a.id : null, dirty: false };
+    let d;
+    if (a) d = { name: a.c.name, phone: a.c.phone, plate: a.c.plate, car: a.c.car, service: a.service, len: a.dur, day: a.key, start: a.start, lane: a.lane, note: a.note };
+    else {
+      const svc = svcOf(pre.service) || settings.services[0], day = pre.day || key(cur);
+      d = { name: '', phone: '', plate: '', car: '', note: '', service: svc.name, len: svc.dur, day, ...(pre.start == null ? firstFree(day, svc) : null), ...pre };
+    }
+    formState = { mode, id: a ? a.id : null, dirty: !!pre.dirty, fromFinder: !!pre.fromFinder };
     view = 'form';
     selId = a ? a.id : null;
     panel.dataset.view = 'form';
     let starts = '';
-    for (let t = OPEN; t <= BOARD_END - 15; t += STEP) starts += '<option value="' + t + '"' + (t === d.start ? ' selected' : '') + '>' + hm(t) + '</option>';
-    const lens = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360];
-    if (!lens.includes(d.len)) lens.push(d.len);
+    for (let t = boardFrom; t <= boardTo - STEP; t += STEP) starts += opt(t, hm(t), t === d.start);
+    const lens = [...new Set([...LENS, d.len])].sort((x, y) => x - y);
+    const names = [...new Set([...settings.services.map((s) => s.name), d.service])];
     panel.innerHTML =
       '<div class="p-head"><h2 id="panelTitle" tabindex="-1">' + (a ? 'Termin ändern' : 'Neuer Termin') + '</h2><button type="button" class="icon-btn" data-form-cancel aria-label="Abbrechen">' + ICON.x + '</button></div>' +
       '<div class="p-scroll"><form class="form" id="f" novalidate>' +
@@ -1015,75 +1404,85 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       '<div class="row2"><div class="field"><label for="f-plate">Kennzeichen</label><input id="f-plate" autocapitalize="characters" autocomplete="off" value="' + esc(d.plate) + '"></div>' +
       '<div class="field"><label for="f-phone">Telefon</label><input id="f-phone" type="tel" autocomplete="off" value="' + esc(d.phone) + '"></div></div>' +
       '<div class="field"><label for="f-car">Fahrzeug</label><input id="f-car" autocomplete="off" value="' + esc(d.car) + '"></div>' +
-      '<div class="row2"><div class="field"><label for="f-service">Leistung</label><select id="f-service">' + SERVICE_NAMES.map((s) => '<option' + (s === d.service ? ' selected' : '') + '>' + esc(s) + '</option>').join('') + '</select></div>' +
-      '<div class="field"><label for="f-len">Dauer</label><select id="f-len">' + lens.sort((x, y) => x - y).map((m) => '<option value="' + m + '"' + (m === d.len ? ' selected' : '') + '>' + dur(m) + '</option>').join('') + '</select></div></div>' +
+      '<div class="row2"><div class="field"><label for="f-service">Leistung</label><select id="f-service">' + names.map((s) => opt(s, s, s === d.service)).join('') + '</select></div>' +
+      '<div class="field"><label for="f-len">Dauer</label><select id="f-len">' + lens.map((m) => opt(m, dur(m), m === d.len)).join('') + '</select></div></div>' +
       '<div class="row3"><div class="field"><label for="f-day">Tag</label><input id="f-day" type="date" required value="' + d.day + '"></div>' +
       '<div class="field"><label for="f-start">Beginn</label><select id="f-start">' + starts + '</select></div>' +
-      '<div class="field"><label for="f-lane">Platz</label><select id="f-lane">' + LANES.map((l, i) => '<option value="' + i + '"' + (i === d.lane ? ' selected' : '') + '>' + esc(l.name) + '</option>').join('') + '</select></div></div>' +
+      '<div class="field"><label for="f-lane">Mechaniker</label><select id="f-lane">' + settings.lanes.map((l, i) => opt(i, l.name, i === d.lane)).join('') + '</select></div></div>' +
       '<div id="f-slot" aria-live="polite"></div>' +
+      (a ? '' : '<button type="button" class="link" data-to-finder>' + ICON.find + 'Freien Termin finden</button>') +
       '<div class="field"><label for="f-note">Notiz</label><input id="f-note" autocomplete="off" value="' + esc(d.note) + '" placeholder="zum Beispiel: Kunde wartet"></div>' +
       '<div class="f-actions"><button type="submit" class="btn go">' + (a ? 'Änderungen speichern' : 'Termin anlegen') + '</button><button type="button" class="btn quiet" data-form-cancel>Abbrechen</button></div>' +
       '</form></div>';
+    mode = 'day';
+    setDay(d.day ? fromKey(d.day) : cur);
     checkSlot();
-    if (pre && pre.focus) { const el = $(pre.focus); if (el) el.focus(); }
+    if (pre.focus) $(pre.focus).focus();
     else if (!a) $('f-name').focus();
     else $('panelTitle').focus();
-    renderBoard();
   }
-  function nextFreeStart(k) {
-    const d = fromKey(k);
-    let t = k === todayKey ? Math.max(WORK_START, Math.ceil(nowMin / 15) * 15) : 8 * 60;
-    return Math.min(t, closeOf(d) - 30);
+  function firstFree(day, svc) {
+    const s = findSlots(A, settings, { service: svc, from: day, part: 'any', lane: null, days: 1, now: { key: todayKey, min: nowMin } }).find((x) => x.day === day);
+    return s ? { lane: s.lane, start: s.start } : { lane: 0, start: (windowOf(day, 0) || { open: boardFrom + 60 }).open };
   }
   function formValues() {
     return { day: $('f-day').value, start: +$('f-start').value, len: +$('f-len').value, lane: +$('f-lane').value };
   }
+  const formDraft = () => ({ name: $('f-name').value, phone: $('f-phone').value, plate: $('f-plate').value, car: $('f-car').value, note: $('f-note').value, service: $('f-service').value, ...formValues() });
   function slotProblem(v, except) {
     if (!v.day) return { text: 'Bitte einen Tag wählen.' };
-    const d = fromKey(v.day);
-    if (d.getDay() === 0) return { text: 'Sonntags ist die Werkstatt geschlossen.', sugg: [] };
-    const close = closeOf(d);
-    if (v.start + v.len > close) return { text: 'Der Termin würde nach Feierabend (' + hm(close) + ' Uhr) enden.', sugg: suggestions(v, except) };
-    const c = clash(v.day, v.lane, v.start, v.len, except);
-    if (c) return { text: LANES[v.lane].name + ' ist von ' + hm(c.start) + ' bis ' + hm(c.start + c.dur) + ' Uhr belegt (' + c.c.name + ').', sugg: suggestions(v, except) };
-    return null;
+    const w = windowOf(v.day, v.lane), name = settings.lanes[v.lane].name, c = w && clash(v.day, v.lane, v.start, v.len, except);
+    const p = !w ? { short: 'geschlossen', text: dayWindow(v.day) ? name + ' ist an diesem Tag nicht da.' : 'Am ' + dfTitle.format(fromKey(v.day)) + ' ist die Werkstatt geschlossen.' }
+      : v.start < w.open ? { short: 'zu früh', text: 'Die Werkstatt öffnet an diesem Tag erst um ' + hm(w.open) + ' Uhr.' }
+      : v.start + v.len > w.close ? { short: 'zu spät', text: 'Der Termin würde nach Feierabend (' + hm(w.close) + ' Uhr) enden.' }
+      : c ? { short: 'belegt', text: name + ' ist von ' + hm(c.start) + ' bis ' + hm(c.start + c.dur) + ' Uhr belegt (' + c.c.name + ').' }
+      : null;
+    return p && { ...p, sugg: suggestions(v, except) };
   }
   function suggestions(v, except) {
-    const out = [], close = closeOf(fromKey(v.day));
-    for (let l = 0; l < LANES.length && out.length < 2; l++) {
-      if (l === v.lane) continue;
-      if (v.start + v.len <= close && !clash(v.day, l, v.start, v.len, except)) out.push({ lane: l, start: v.start, label: LANES[l].name + ' um ' + hm(v.start) });
-    }
-    for (let t = v.start + STEP; t + v.len <= close; t += STEP) {
-      if (!clash(v.day, v.lane, t, v.len, except)) { out.push({ lane: v.lane, start: t, label: LANES[v.lane].name + ' um ' + hm(t) }); break; }
+    const free = (lane, start) => { const w = windowOf(v.day, lane); return w && start >= w.open && start + v.len <= w.close && !clash(v.day, lane, start, v.len, except); };
+    const at = (lane, start) => ({ lane, start, label: hm(start) + ' bei ' + settings.lanes[lane].name });
+    const out = settings.lanes.map((_, lane) => lane).filter((lane) => lane !== v.lane && free(lane, v.start)).slice(0, 2).map((lane) => at(lane, v.start));
+    const w = windowOf(v.day, v.lane);
+    if (w) for (let t = Math.max(v.start + STEP, w.open); t + v.len <= w.close; t += STEP) {
+      if (free(v.lane, t)) { out.push(at(v.lane, t)); break; }
     }
     return out;
+  }
+  function ruleHints(v) {
+    const s = svcOf($('f-service').value), out = [];
+    if (s && v.day && !dayOk(s, v.day)) out.push(s.name + ' ist sonst nur ' + listDe(advs(s.days)) + ' eingeplant.');
+    if (s && !laneOk(s, v.lane)) out.push(s.name + ' macht sonst nur ' + listDe(laneNames(s.lanes)) + '.');
+    return out.map((t) => '<p class="ok-slot">' + WARN + esc(t) + '</p>').join('');
   }
   function checkSlot() {
     const box = $('f-slot');
     if (!box) return;
     const v = formValues(), p = slotProblem(v, formState.id);
-    if (p) {
-      box.innerHTML = '<div class="clash" id="f-clash"><span>' + WARN + esc(p.text) + '</span>' + (p.sugg && p.sugg.length ? '<div>' + p.sugg.map((s) => '<button type="button" class="btn" data-sugg="' + s.lane + ':' + s.start + '">' + esc(s.label) + ' nehmen</button>').join('') + '</div>' : '') + '</div>';
-    } else {
-      box.innerHTML = '<p class="ok-slot">' + ICON.ok + esc(LANES[v.lane].name) + ' ist von ' + hm(v.start) + ' bis ' + hm(v.start + v.len) + ' Uhr frei.</p>';
-    }
+    box.innerHTML = (p
+      ? '<div class="clash" id="f-clash"><span>' + WARN + esc(p.text) + '</span>' + (p.sugg && p.sugg.length ? '<div>' + p.sugg.map((s) => '<button type="button" class="btn" data-sugg="' + s.lane + ':' + s.start + '">' + esc(s.label) + ' nehmen</button>').join('') + '</div>' : '') + '</div>'
+      : '<p class="ok-slot">' + ICON.ok + esc(settings.lanes[v.lane].name) + ' ist von ' + hm(v.start) + ' bis ' + hm(v.start + v.len) + ' Uhr frei.</p>') + ruleHints(v);
     drawDraftGhost();
+  }
+  function draftSlot() {
+    if (view === 'form' && $('f-day')) {
+      const v = formValues();
+      return { ...v, bad: !!slotProblem(v, formState.id), label: $('f-name').value || (formState.mode === 'edit' ? '' : 'Neuer Termin') };
+    }
+    const s = view === 'finder' && finder.shown[finder.active], svc = s && finderService();
+    return s ? { day: s.day, lane: s.lane, start: s.start, len: svc.dur, bad: false, label: svc.name } : null;
   }
   function drawDraftGhost() {
     plateEl.querySelectorAll('.ghost.draft').forEach((g) => g.remove());
-    if (view !== 'form' || !$('f-day')) return;
-    const v = formValues();
-    if (v.day !== key(cur)) return;
-    const lane = plateEl.querySelector('.lane[data-lane="' + v.lane + '"]');
-    if (!lane) return;
+    const v = draftSlot(), lane = v && v.day === key(cur) && plateEl.querySelector('.lane[data-lane="' + v.lane + '"]');
+    if (!lane) return null;
     const H = hourPx(), g = document.createElement('div');
-    const bad = !!slotProblem(v, formState.id);
-    g.className = 'ghost draft' + (bad ? ' bad' : '');
-    g.style.top = ((v.start - OPEN) * H) / 60 + 2 + 'px';
+    g.className = 'ghost draft' + (v.bad ? ' bad' : '');
+    g.style.top = ((v.start - boardFrom) * H) / 60 + 2 + 'px';
     g.style.height = (v.len * H) / 60 - 4 + 'px';
-    g.innerHTML = '<span>' + hm(v.start) + '–' + hm(v.start + v.len) + '</span><span>' + esc(($('f-name').value || (formState.mode === 'edit' ? '' : 'Neuer Termin'))) + '</span>';
+    g.innerHTML = '<span>' + hm(v.start) + '–' + hm(v.start + v.len) + '</span><span>' + esc(v.label) + '</span>';
     lane.appendChild(g);
+    return g;
   }
   function saveForm() {
     const name = $('f-name');
@@ -1100,30 +1499,155 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       a.c = known && known.plate === vals.plate ? known : { name: vals.name, phone: vals.phone, plate: vals.plate, car: vals.car };
       Object.assign(a, { key: v.day, lane: v.lane, start: v.start, dur: v.len, service: vals.service, note: vals.note });
       index(a);
-      pushUndo('Änderung an ' + a.c.name, () => { Object.assign(a, before); index(a); refresh(a.id); });
-      toast('Gespeichert: ' + a.c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr, ' + LANES[a.lane].name + '.', { undo: true });
+      changed('Änderung an ' + a.c.name, () => { Object.assign(a, before); index(a); refresh(a.id); });
+      toast('Gespeichert: ' + a.c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { undo: true });
     } else {
       const known = CUSTOMERS.find((c) => c.name === vals.name);
       const c = known && (!vals.plate || known.plate === vals.plate) ? known : { name: vals.name, phone: vals.phone || '', plate: vals.plate, car: vals.car };
       a = { id: seq++, key: v.day, lane: v.lane, start: v.start, dur: v.len, c, service: vals.service, note: vals.note, status: 'plan', since: null, fresh: true };
       index(a); A.push(a); BY.set(a.id, a);
-      pushUndo('Neuer Termin ' + c.name, () => { A.splice(A.indexOf(a), 1); BY.delete(a.id); if (selId === a.id) { selId = null; view = 'idle'; } refresh(); });
-      toast('Termin angelegt: ' + c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr, ' + LANES[a.lane].name + '.', { undo: true });
+      changed('Neuer Termin ' + c.name, () => { A.splice(A.indexOf(a), 1); BY.delete(a.id); if (selId === a.id) { selId = null; view = 'idle'; } refresh(); });
+      toast('Termin angelegt: ' + c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { undo: true });
     }
     formState = null;
+    finder = null;
     cur = fromKey(a.key);
     openDetail(a.id, false);
   }
-  async function leaveForm() {
-    if (formState && formState.dirty) {
-      const ok = await ask({ title: 'Eingaben verwerfen?', text: 'Der Termin ist noch nicht gespeichert.', keep: 'Weiter bearbeiten', act: 'Verwerfen' });
-      if (!ok) return false;
-    }
-    const back = formState && formState.mode === 'edit' ? formState.id : null;
-    formState = null;
-    if (back) openDetail(back, false); else { view = 'idle'; selId = null; render(); }
+  // Wahr, sobald nichts Ungespeichertes mehr offen ist. Wer danach weitergeht, zeichnet selbst.
+  async function dropDraft() {
+    const dirty = view === 'form' ? formState.dirty : view === 'finder' && finder.dirty;
+    if (dirty && !(await ask({ title: 'Eingaben verwerfen?', text: 'Der Termin ist noch nicht gespeichert.', keep: 'Weiter bearbeiten', act: 'Verwerfen' }))) return false;
+    if (view === 'form' || view === 'finder') { formState = null; finder = null; selId = null; view = 'idle'; }
     return true;
   }
+  async function leaveForm() {
+    const f = formState;
+    if (f.fromFinder) { Object.assign(finder, { draft: formDraft(), dirty: f.dirty }); formState = null; showFinder(); return; }
+    if (!(await dropDraft())) return;
+    if (f.mode === 'edit') openDetail(f.id, false); else render();
+  }
+  /* ---------- Terminsuche: reine Funktion über Termine und Einstellungen ---------- */
+  const PARTS = { any: [0, 1440], am: [0, 720], pm: [720, 1440] };
+  function findSlots(appts, s, q) {
+    const out = [], len = q.service.dur, [from, to] = PARTS[q.part], busy = new Map();
+    for (const a of appts) { const id = a.key + ':' + a.lane; (busy.get(id) || busy.set(id, []).get(id)).push(a); }
+    let d = fromKey(q.from > q.now.key ? q.from : q.now.key);
+    for (let i = 0; i < q.days; i++, d = addDays(d, 1)) {
+      const k = key(d);
+      if (!dayOk(q.service, k)) continue;
+      s.lanes.forEach((_, lane) => {
+        const w = windowIn(s, k, lane);
+        if (!w || (q.lane != null && q.lane !== lane) || !laneOk(q.service, lane)) return;
+        const taken = (busy.get(k + ':' + lane) || []).sort((x, y) => x.start - y.start);
+        let free = k === q.now.key ? Math.max(w.open, Math.ceil(q.now.min / STEP) * STEP) : w.open;
+        // Je Lücke nur zwei Angebote: direkt am Anfang und, falls anders, bündig am Ende. So zerfällt der Tag nicht in Reste.
+        for (const a of [...taken, { start: w.close, dur: 0 }]) {
+          const end = Math.min(a.start, w.close), lo = Math.max(free, from), hi = end - len;
+          if (lo <= hi && lo < to) {
+            out.push({ day: k, lane, start: lo, fillsGap: end - free === len });
+            if (hi > lo && hi < to) out.push({ day: k, lane, start: hi, fillsGap: false });
+          }
+          free = Math.max(free, a.start + a.dur);
+        }
+      });
+    }
+    return out.sort((x, y) => (x.day < y.day ? -1 : x.day > y.day ? 1 : x.start - y.start || x.lane - y.lane));
+  }
+
+  function openFinder(pre = {}) {
+    finder = { service: pre.service, from: todayKey, part: 'any', lane: null, limit: 12, shown: [], days: new Map(), active: 0, home: cur, draft: pre.draft || null, dirty: !!pre.dirty, back: !!pre.back };
+    showFinder();
+  }
+  function finderFromForm() {
+    const draft = formDraft(), dirty = formState.dirty;
+    formState = null;
+    openFinder({ service: draft.service, draft, dirty, back: true });
+  }
+  const finderService = () => svcOf(finder.service) || settings.services[0];
+  function showFinder() {
+    view = 'finder';
+    selId = null;
+    panel.dataset.view = 'finder';
+    const svc = finderService();
+    panel.innerHTML =
+      (finder.back ? '<button type="button" class="back" data-finder-close>' + ICON.left + 'Zurück zum Termin</button>' : '') +
+      '<div class="p-head"><h2 id="panelTitle" tabindex="-1">Freien Termin finden</h2><button type="button" class="icon-btn" data-finder-close aria-label="Terminsuche schließen">' + ICON.x + '</button></div>' +
+      '<div class="p-scroll"><div class="form">' +
+      '<div class="row2"><div class="field"><label for="fi-service">Leistung</label><select id="fi-service" data-fi="service" aria-describedby="fi-rule">' + settings.services.map((s) => opt(s.name, s.name, s === svc)).join('') + '</select></div>' +
+      '<div class="field"><label for="fi-from">Frühestens ab</label><input id="fi-from" data-fi="from" type="date" min="' + todayKey + '" value="' + finder.from + '"></div></div>' +
+      '<div class="row2"><div class="field"><label for="fi-part">Tageszeit</label><select id="fi-part" data-fi="part">' + [['any', 'egal'], ['am', 'vormittags'], ['pm', 'nachmittags']].map(([v, l]) => opt(v, l, v === finder.part)).join('') + '</select></div>' +
+      '<div class="field"><label for="fi-lane">Mechaniker</label><select id="fi-lane" data-fi="lane">' + opt('', 'egal', finder.lane == null) + settings.lanes.map((l, i) => opt(i, l.name, i === finder.lane)).join('') + '</select></div></div>' +
+      '<p class="hint" id="fi-rule"></p></div><div id="fi-out"></div></div>' +
+      '<p class="p-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> Vorschlag wechseln</span><span><kbd>Enter</kbd> übernehmen</span><span><kbd>Esc</kbd> ' + (finder.back ? 'zurück zum Termin' : 'schließen') + '</span></p>';
+    renderSlots();
+    $('fi-service').focus();
+  }
+  function renderSlots() {
+    const svc = finderService(), first = finder.from > todayKey ? finder.from : todayKey;
+    const all = findSlots(A, settings, { service: svc, from: finder.from, part: finder.part, lane: finder.lane, days: 56, now: { key: todayKey, min: nowMin } });
+    const shown = [];
+    let more = false, n = 0;
+    for (const s of all) {
+      if (!shown.length || shown[shown.length - 1].day !== s.day) { if (shown.length >= finder.limit) { more = true; break; } n = 0; }
+      if (n++ < 3) shown.push(s);
+    }
+    finder.shown = shown;
+    finder.days = new Map();
+    for (const s of all) if (!finder.days.has(s.day)) finder.days.set(s.day, s.start);
+    finder.active = Math.min(Math.max(finder.active, 0), shown.length - 1);
+    const rule = (svc.days ? ', nur ' + listDe(advs(svc.days)) : '') + (svc.lanes ? ', nur bei ' + listDe(laneNames(svc.lanes)) : '');
+    $('fi-rule').textContent = svc.name + ' dauert ' + dur(svc.dur) + (rule && rule + '.');
+    let h = '';
+    if (!shown.length) {
+      h = '<p class="empty">In den acht Wochen ab ' + (first === todayKey ? 'heute' : 'dem ' + dfDate.format(fromKey(first))) + ' ist für ' + esc(svc.name) + ' nichts frei.' +
+        (finder.part !== 'any' || finder.lane != null ? ' Mit „egal“ bei Tageszeit und Mechaniker findet sich vielleicht etwas.' : '') + '</p>';
+    } else {
+      h = '<div role="listbox" aria-label="Freie Termine">';
+      shown.forEach((s, i) => {
+        if (!i || shown[i - 1].day !== s.day) h += (i ? '</div>' : '') + '<div role="group" aria-labelledby="fd-' + s.day + '"><p class="grp" id="fd-' + s.day + '">' + esc(nearDay(s.day) || dfTitle.format(fromKey(s.day))) + '</p>';
+        h += '<button type="button" class="orow" role="option" aria-selected="' + (i === finder.active) + '" tabindex="' + (i === finder.active ? 0 : -1) + '" data-slot="' + i + '">' +
+          '<span class="o-time">' + hm(s.start) + '</span><span class="o-main"><b>' + esc(settings.lanes[s.lane].name) + '</b><span>bis ' + hm(s.start + svc.dur) + ' Uhr</span></span>' +
+          (s.fillsGap ? '<span class="tag">füllt die Lücke</span>' : '') + '</button>';
+      });
+      h += '</div></div>' + (more ? '<button type="button" class="btn quiet more" data-finder-more>Weitere zeigen</button>' : '');
+    }
+    $('fi-out').innerHTML = h;
+    previewSlot();
+  }
+  function previewSlot() {
+    const s = finder.shown[finder.active];
+    if (mode === 'month') { setDay(s ? fromKey(s.day) : cur); return; }
+    if (s && s.day !== key(cur)) setDay(fromKey(s.day));
+    const g = drawDraftGhost();
+    if (g) reveal(g, s.start, true);
+  }
+  function pickSlot(i, focus) {
+    finder.active = i;
+    panel.querySelectorAll('[data-slot]').forEach((o, n) => { o.setAttribute('aria-selected', String(n === i)); o.tabIndex = n === i ? 0 : -1; if (n === i && focus) o.focus(); });
+    previewSlot();
+  }
+  function finderInput(el) {
+    const v = el.value;
+    finder[el.dataset.fi] = el.dataset.fi === 'lane' ? (v === '' ? null : +v) : el.dataset.fi === 'from' ? v || todayKey : v;
+    Object.assign(finder, { limit: 12, active: 0 });
+    renderSlots();
+    const s = finder.shown[0];
+    announce(s ? 'Nächster freier Termin: ' + (nearDay(s.day) || dfTitle.format(fromKey(s.day))) + ', ' + hm(s.start) + ' Uhr bei ' + settings.lanes[s.lane].name + '.' : 'Kein freier Termin gefunden.');
+  }
+  function takeSlot(i) {
+    const s = finder.shown[i], svc = finderService();
+    openForm('new', { ...finder.draft, service: svc.name, len: svc.dur, day: s.day, start: s.start, lane: s.lane, dirty: finder.dirty, fromFinder: true });
+  }
+  async function closeFinder() {
+    const f = finder;
+    if (f.back) { finder = null; openForm('new', { ...f.draft, dirty: f.dirty }); return; }
+    if (!(await dropDraft())) return;
+    cur = f.home;
+    render();
+    $('findBtn').focus();
+  }
+
   function syncInvalid(el) {
     const bad = el.matches(':user-invalid') || (!el.value.trim() && el.required);
     el.setAttribute('aria-invalid', String(bad));
@@ -1163,13 +1687,13 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     while (box.children.length > 3) box.firstElementChild.remove();
     announce(text + (opts.undo ? ' Rückgängig mit Steuerung plus Z.' : ''));
   }
-  function pushUndo(label, fn) { undoStack.push({ label, fn }); if (undoStack.length > 30) undoStack.shift(); }
   function undo(entry) {
     let u;
     if (entry) { const i = undoStack.indexOf(entry); if (i < 0) { toast('Das wurde schon rückgängig gemacht.'); return; } u = undoStack.splice(i, 1)[0]; }
     else u = undoStack.pop();
     if (!u) { toast('Es gibt nichts rückgängig zu machen.'); return; }
     u.fn();
+    saveAppts();
     toast('Rückgängig gemacht: ' + u.label + '.');
   }
   $('toasts').addEventListener('click', (e) => {
@@ -1186,12 +1710,12 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   /* ---------- Verschieben ---------- */
   function moveTo(a, lane, start, how) {
     const p = slotProblem({ day: a.key, lane, start, len: a.dur }, a.id);
-    if (p) { toast(p.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr auf ' + LANES[a.lane].name + '.', { bad: true }); return false; }
+    if (p) { toast(p.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { bad: true }); return false; }
     const before = { lane: a.lane, start: a.start };
     a.lane = lane; a.start = start; index(a);
-    pushUndo('Verschieben von ' + a.c.name, () => { a.lane = before.lane; a.start = before.start; index(a); refresh(a.id); });
-    if (how !== 'key') toast(a.c.name + ' verschoben: ' + LANES[lane].name + ', ' + hm(start) + ' Uhr.', { undo: true });
-    else announce(a.c.name + ': ' + LANES[lane].name + ', ' + hm(start) + ' Uhr.');
+    changed('Verschieben von ' + a.c.name, () => { a.lane = before.lane; a.start = before.start; index(a); refresh(a.id); });
+    if (how !== 'key') toast(a.c.name + ' verschoben: ' + settings.lanes[lane].name + ', ' + hm(start) + ' Uhr.', { undo: true });
+    else announce(a.c.name + ': ' + settings.lanes[lane].name + ', ' + hm(start) + ' Uhr.');
     return true;
   }
 
@@ -1222,18 +1746,19 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     const lanes = [...plateEl.querySelectorAll('.lane')];
     let l = lanes.findIndex((el) => { const r = el.getBoundingClientRect(); return d.cx >= r.left && d.cx < r.right; });
     if (l < 0) l = d.lane;
-    const start = Math.max(OPEN, Math.min(BOARD_END - a.dur, a.start + Math.round((dy / H) * 4) * STEP));
+    const w = windowOf(a.key, l) || { open: boardFrom, close: boardTo };
+    const start = Math.max(w.open, Math.min(w.close - a.dur, a.start + Math.round((dy / H) * 4) * STEP));
     d.lane = l; d.start = start;
     const p = slotProblem({ day: a.key, lane: l, start, len: a.dur }, a.id);
     d.bad = p;
     const g = d.ghost;
     g.className = 'ghost' + (p ? ' bad' : '');
-    g.style.top = ((start - OPEN) * H) / 60 + 2 + 'px';
+    g.style.top = ((start - boardFrom) * H) / 60 + 2 + 'px';
     g.style.height = (a.dur * H) / 60 - 4 + 'px';
-    g.innerHTML = (p ? WARN : '') + '<span>' + hm(start) + '–' + hm(start + a.dur) + '</span><span>' + (p ? 'belegt' : esc(LANES[l].name)) + '</span>';
+    g.innerHTML = (p ? WARN : '') + '<span>' + hm(start) + '–' + hm(start + a.dur) + '</span><span>' + esc(p ? p.short : settings.lanes[l].name) + '</span>';
     if (g.parentElement !== lanes[l]) lanes[l].appendChild(g);
     const head = d.card.querySelector('.card-head');
-    const where = p ? WARN + '<span class="stt">belegt</span>' : '<span class="stt">' + esc(LANES[l].name) + '</span>';
+    const where = (p ? WARN : '') + '<span class="stt">' + esc(p ? p.short : settings.lanes[l].name) + '</span>';
     head.innerHTML = d.card.classList.contains('short')
       ? '<span class="who">' + hm(start) + ' ' + esc(a.c.name) + '</span><span class="st">' + where + '</span>'
       : '<span>' + hm(start) + '–' + hm(start + a.dur) + '</span><span class="st">' + where + '</span>';
@@ -1275,7 +1800,7 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       }
       return;
     }
-    if (!cancel && changed && d.bad) toast(d.bad.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr auf ' + LANES[a.lane].name + '.', { bad: true });
+    if (!cancel && changed && d.bad) toast(d.bad.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { bad: true });
     if (cancel) announce('Verschieben abgebrochen.');
     const tr = d.card.style.translate;
     d.card.querySelector('.card-head').innerHTML = d.headHtml;
@@ -1291,18 +1816,18 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
   function hideSlotHint() { if (slotHint) { slotHint.remove(); slotHint = null; } }
   function minuteAt(lane, clientY) {
     const H = hourPx(), y = clientY - lane.getBoundingClientRect().top;
-    return Math.max(OPEN, Math.min(BOARD_END - 30, OPEN + Math.floor((y / H) * 4) * STEP));
+    return Math.max(boardFrom, Math.min(boardTo - 30, boardFrom + Math.floor((y / H) * 4) * STEP));
   }
   plateEl.addEventListener('pointermove', (e) => {
     if (drag || e.pointerType !== 'mouse') return;
-    const lane = e.target.closest('.lane');
-    if (!lane || e.target !== lane || cur.getDay() === 0) { hideSlotHint(); return; }
+    const lane = e.target.closest('.lane'), w = lane && windowOf(key(cur), +lane.dataset.lane);
+    if (!w || e.target !== lane) { hideSlotHint(); return; }
     const t = minuteAt(lane, e.clientY), H = hourPx(), li = +lane.dataset.lane, k = key(cur);
-    const nextStart = Math.min(BOARD_END, ...dayAppts(k).filter((a) => a.lane === li && a.start + a.dur > t).map((a) => (a.start <= t ? t : a.start)));
+    const nextStart = Math.min(w.close, ...dayAppts(k).filter((a) => a.lane === li && a.start + a.dur > t).map((a) => (a.start <= t ? t : a.start)));
     const room = Math.min(30, nextStart - t);
     if (room < 15) { hideSlotHint(); return; }
     if (!slotHint) { slotHint = document.createElement('div'); slotHint.className = 'hint-slot'; }
-    slotHint.style.top = ((t - OPEN) * H) / 60 + 2 + 'px';
+    slotHint.style.top = ((t - boardFrom) * H) / 60 + 2 + 'px';
     slotHint.style.height = (room * H) / 60 - 4 + 'px';
     slotHint.innerHTML = ICON.plus + (room >= 30 ? 'Termin um ' : '') + hm(t);
     if (slotHint.parentElement !== lane) lane.appendChild(slotHint);
@@ -1312,13 +1837,12 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (Date.now() - suppressClick < 350) return;
     const card = e.target.closest('.card');
     if (card) {
-      if (view === 'form' && !(await leaveForm())) return;
+      if (!(await dropDraft())) return;
       openDetail(+card.dataset.id, false); return;
     }
     const lane = e.target.closest('.lane');
     if (lane && (e.target === lane || e.target === slotHint || e.target.closest('.hint-slot'))) {
-      if (cur.getDay() === 0) return;
-      if (view === 'form' && !(await leaveForm())) return;
+      if (!(await dropDraft())) return;
       hideSlotHint();
       openForm('new', { lane: +lane.dataset.lane, start: minuteAt(lane, e.clientY), day: key(cur) });
     }
@@ -1333,7 +1857,7 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (e.key === 'ArrowDown') start += STEP;
     if (e.key === 'ArrowLeft') lane -= 1;
     if (e.key === 'ArrowRight') lane += 1;
-    if (lane < 0 || lane >= LANES.length || start < OPEN || start + a.dur > BOARD_END) return;
+    if (lane < 0 || lane >= settings.lanes.length) return;
     if (moveTo(a, lane, start, 'key')) {
       refresh(a.id);
       const el = plateEl.querySelector('.card[data-id="' + a.id + '"] .card-open');
@@ -1349,6 +1873,8 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (t.closest('[data-close-search]')) { endSearch(true); q.focus(); return; }
     if (t.closest('[data-theme-toggle]')) { toggleTheme(); return; }
     if (t.closest('[data-close-overview]')) { view = 'idle'; renderPanel(); $('sum').focus(); return; }
+    if (t.closest('[data-print]')) { window.print(); return; }
+    if (t.closest('[data-msg]')) { toast('Die Demo verschickt keine Nachrichten.'); return; }
     if (t.closest('[data-back]')) { view = 'search'; runSearchKeepActive(); q.focus(); return; }
     if (t.closest('[data-close]')) { selId = null; view = fromSearch && q.value.trim() ? 'search' : 'idle'; fromSearch = false; render(); return; }
     const a = BY.get(selId);
@@ -1360,23 +1886,29 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
       if (!ok) return;
       const i = A.indexOf(a);
       A.splice(i, 1); BY.delete(a.id);
-      pushUndo('Absage von ' + a.c.name, () => { A.push(a); BY.set(a.id, a); openDetail(a.id, false); });
+      changed('Absage von ' + a.c.name, () => { A.push(a); BY.set(a.id, a); openDetail(a.id, false); });
       selId = null; view = 'idle';
       render();
       toast('Abgesagt: ' + a.c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr.', { undo: true });
       return;
     }
     if (t.closest('[data-form-cancel]')) { leaveForm(); return; }
+    if (t.closest('[data-to-finder]')) { finderFromForm(); return; }
+    if (t.closest('[data-finder-close]')) { closeFinder(); return; }
+    if (t.closest('[data-finder-more]')) { const n = finder.shown.length; finder.limit += 12; renderSlots(); pickSlot(n, true); return; }
+    const slot = t.closest('[data-slot]');
+    if (slot) { takeSlot(+slot.dataset.slot); return; }
     const sg = t.closest('[data-sugg]');
     if (sg) {
       const [l, s] = sg.dataset.sugg.split(':').map(Number);
       $('f-lane').value = String(l); $('f-start').value = String(s);
       formState.dirty = true; checkSlot();
-      announce(LANES[l].name + ' um ' + hm(s) + ' gewählt.');
+      announce(hm(s) + ' bei ' + settings.lanes[l].name + ' gewählt.');
     }
   });
   panel.addEventListener('change', (e) => {
     if (e.target.id === 'stSel') { const a = BY.get(selId); if (a && e.target.value) setStatus(a, e.target.value); return; }
+    if (view === 'finder' && e.target.dataset.fi && e.target.dataset.fi !== 'from') { finderInput(e.target); return; }
     if (view !== 'form') return;
     formState.dirty = true;
     if (e.target.id === 'f-name') {
@@ -1387,13 +1919,14 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
         if (!$('f-car').value) $('f-car').value = c.car;
       }
     }
-    if (e.target.id === 'f-service') { const m = DEF_DUR[e.target.value]; if (m) $('f-len').value = String(m); }
+    if (e.target.id === 'f-service') { const svc = svcOf(e.target.value); if (svc) $('f-len').value = String(svc.dur); }
     if (['f-day', 'f-start', 'f-lane', 'f-len', 'f-service'].includes(e.target.id)) {
       if (e.target.id === 'f-day' && $('f-day').value && $('f-day').value !== key(cur)) setDay(fromKey($('f-day').value));
       checkSlot();
     }
   });
   panel.addEventListener('input', (e) => {
+    if (view === 'finder' && e.target.dataset.fi === 'from') { finderInput(e.target); return; }
     if (view !== 'form') return;
     formState.dirty = true;
     if (e.target.id === 'f-name') { syncInvalidSoft(e.target); drawDraftGhost(); suggest(e.target.value); }
@@ -1449,6 +1982,19 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     if (!bad) { el.style.borderColor = ''; const err = $(el.dataset.error); if (err) err.style.display = ''; }
   }
   panel.addEventListener('submit', (e) => { e.preventDefault(); saveForm(); });
+  panel.addEventListener('keydown', (e) => {
+    const o = e.target.closest('[data-slot]');
+    if (!o) return;
+    const n = finder.shown.length, i = +o.dataset.slot;
+    const to = { ArrowDown: (i + 1) % n, ArrowUp: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key];
+    if (to == null) return;
+    e.preventDefault();
+    pickSlot(to, true);
+  });
+  const hoverSlot = (e) => { const o = e.target.closest('[data-slot]'); if (o && +o.dataset.slot !== finder.active) pickSlot(+o.dataset.slot); };
+  panel.addEventListener('focusin', hoverSlot);
+  // Nur echte Mausbewegung zählt: Rollt die Liste per Pfeiltaste, meldet der Browser sonst die Zeile unter dem ruhenden Zeiger.
+  panel.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) hoverSlot(e); });
 
   /* ---------- Kopf und Woche: Bedienung ---------- */
   q.addEventListener('input', runSearch);
@@ -1460,9 +2006,15 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     else if (e.key === 'Escape') { e.preventDefault(); if (q.value) endSearch(true); else q.blur(); }
   });
   $('qClear').addEventListener('click', () => { endSearch(true); q.focus(); });
-  $('sum').addEventListener('click', async () => { if (view === 'form' && !(await leaveForm())) return; selId = null; fromSearch = false; if (q.value) endSearch(false); view = 'overview'; render(); const h = $('panelTitle'); if (h) h.focus({ preventScroll: true }); });
-  $('newBtn').addEventListener('click', async () => { if (view === 'form' && !(await leaveForm())) return; openForm('new', { day: key(cur) }); });
-  $('todayBtn').addEventListener('click', () => { setDay(today); renderPanel(); scrollToMinute(nowMin, true); });
+  $('sum').addEventListener('click', async () => { if (!(await dropDraft())) return; selId = null; fromSearch = false; if (q.value) endSearch(false); view = 'overview'; render(); const h = $('panelTitle'); if (h) h.focus({ preventScroll: true }); });
+  $('newBtn').addEventListener('click', async () => { if (!(await dropDraft())) return; openForm('new', { day: key(cur) }); });
+  $('findBtn').addEventListener('click', async () => {
+    if (view === 'finder') { $('fi-service').focus(); return; }
+    if (view === 'form' && formState.mode === 'new') { finderFromForm(); return; }
+    if (!(await dropDraft())) return;
+    openFinder();
+  });
+  $('todayBtn').addEventListener('click', () => { setDay(today); renderPanel(); if (mode === 'day') scrollToMinute(nowMin, true); });
   $('dateBtn').addEventListener('click', () => {
     const inp = $('datePick');
     try { inp.showPicker(); } catch (_) { inp.style.pointerEvents = 'auto'; inp.focus(); inp.click(); }
@@ -1474,26 +2026,246 @@ dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
     const w = e.target.closest('[data-wk]');
     if (w) { setDay(addDays(cur, +w.dataset.wk)); renderPanel(); }
   });
+  $('viewDay').addEventListener('click', () => { if (mode !== 'day') { setMode('day'); showDay(); } });
+  $('viewMonth').addEventListener('click', () => { if (mode !== 'month') setMode('month'); });
+  $('moNav').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mo]');
+    if (!b) return;
+    const y = cur.getFullYear(), m = cur.getMonth() + +b.dataset.mo;
+    setDay(new Date(y, m, Math.min(cur.getDate(), new Date(y, m + 1, 0).getDate())));
+    renderPanel();
+  });
+  monthEl.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-k]');
+    if (!b) return;
+    const k = b.dataset.k;
+    if (view === 'finder' && finder.days.has(k)) {
+      $('fi-from').value = k;
+      finderInput($('fi-from'));
+      monthEl.querySelector('[data-k="' + k + '"]').focus();
+      return;
+    }
+    cur = fromKey(k);
+    setMode('day');
+    showDay();
+    scroller.focus({ preventScroll: true });
+  });
+  monthEl.addEventListener('keydown', (e) => {
+    const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+    if (!step || !e.target.closest('[data-k]') || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const open = openWeekdays();
+    let d = addDays(fromKey(e.target.closest('[data-k]').dataset.k), step);
+    while (!open.includes(d.getDay())) d = addDays(d, Math.sign(step));
+    setDay(d);
+    renderPanel();
+    monthEl.querySelector('[tabindex="0"]').focus();
+  });
 
   document.addEventListener('keydown', (e) => {
     if (drag && e.key === 'Escape') { e.preventDefault(); endDrag(true); return; }
+    if (document.querySelector('dialog[open]')) return;
     const tag = document.activeElement ? document.activeElement.tagName : '';
     const typing = /INPUT|SELECT|TEXTAREA/.test(tag);
     if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); q.focus(); q.select(); return; }
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing) { e.preventDefault(); undo(); return; }
-    if (e.key === 'Escape' && !$('ask').open) {
+    if (e.key === 'Escape') {
       if (view === 'form') { e.preventDefault(); leaveForm(); }
+      else if (view === 'finder') { e.preventDefault(); closeFinder(); }
       else if (view === 'overview') { view = 'idle'; renderPanel(); $('sum').focus(); }
       else if (view === 'detail') { selId = null; view = fromSearch && q.value.trim() ? 'search' : 'idle'; fromSearch = false; render(); if (view === 'search') q.focus(); }
     }
   });
 
+  const setDlg = $('settings'), T0 = 5 * 60, T1 = 22 * 60;
+  function drawServices() {
+    const days = openWeekdays(), box = $('set-svc');
+    box.style.setProperty('--days', days.length);
+    box.innerHTML =
+      '<p class="hint">Die Dauer wird beim Anlegen vorgeschlagen. Tage und Mechaniker gelten für die Terminsuche.</p>' +
+      '<div class="sv sv-head" aria-hidden="true"><span>Leistung</span><span>Dauer</span><span>Tage</span><span>Mechaniker</span></div>' +
+      '<ul class="sv-list">' + settings.services.map((s, i) =>
+        '<li class="sv" role="group" aria-label="' + esc(s.name) + '">' +
+        '<div class="field sv-name"><label class="sr" for="sv-name-' + i + '">Name der Leistung</label><input id="sv-name-' + i + '" data-set="sv-name" data-i="' + i + '" autocomplete="off" value="' + esc(s.name) + '"></div>' +
+        '<div class="field sv-dur"><label class="sr" for="sv-dur-' + i + '">Dauer</label><select id="sv-dur-' + i + '" data-set="sv-dur" data-i="' + i + '">' + LENS.map((m) => opt(m, dur(m), m === s.dur)).join('') + '</select></div>' +
+        '<div class="days" role="group" aria-label="Eingeplante Tage">' + days.map((wd) => '<label class="day"><input type="checkbox" class="sr" data-set="sv-day" data-i="' + i + '" data-d="' + wd + '" aria-label="' + WD[wd].long + '"' + (!s.days || s.days.includes(wd) ? ' checked' : '') + '><span aria-hidden="true">' + WD[wd].short + '</span></label>').join('') + '</div>' +
+        '<div class="field sv-lane"><label class="sr" for="sv-lane-' + i + '">Mechaniker</label><select id="sv-lane-' + i + '" data-set="sv-lane" data-i="' + i + '">' + opt('', 'alle', !s.lanes) + settings.lanes.map((l, n) => opt(n, 'nur ' + l.name, !!s.lanes && s.lanes[0] === n)).join('') + '</select></div>' +
+        '<button type="button" class="icon-btn" data-sv-del="' + i + '" aria-label="' + esc(s.name) + ' löschen"' + (settings.services.length < 2 ? ' disabled' : '') + '>' + ICON.x + '</button></li>').join('') + '</ul>' +
+      '<div><button type="button" class="btn quiet" id="svAdd">' + ICON.plus + 'Leistung hinzufügen</button></div>';
+  }
+  function drawHours() {
+    const times = (lo, hi, at) => { let h = ''; for (let t = Math.min(lo, at); t <= Math.max(hi, at); t += STEP) h += opt(t, hm(t), t === at); return h; };
+    $('set-hours').innerHTML = '<p class="hint">Außerhalb dieser Zeiten lassen sich keine Termine anlegen, und die Terminsuche schlägt dort nichts vor.</p><ul>' +
+      [1, 2, 3, 4, 5, 6].map((wd) => {
+        const h = settings.hours[wd];
+        return '<li class="oh" role="group" aria-label="' + WD[wd].long + '"><strong>' + WD[wd].long + '</strong>' +
+          '<label class="check"><input type="checkbox" id="oh-on-' + wd + '" data-set="oh-on" data-d="' + wd + '"' + (h ? ' checked' : '') + '>geöffnet</label>' +
+          (h ? '<div class="field"><label class="sr" for="oh-from-' + wd + '">von</label><select id="oh-from-' + wd + '" data-set="oh-from" data-d="' + wd + '">' + times(T0, T1 - STEP, h[0]) + '</select></div><span aria-hidden="true">bis</span>' +
+            '<div class="field"><label class="sr" for="oh-to-' + wd + '">bis</label><select id="oh-to-' + wd + '" data-set="oh-to" data-d="' + wd + '">' + times(h[0] + STEP, T1, h[1]) + '</select></div>' : '') + '</li>';
+      }).join('') + '</ul>';
+  }
+  function drawShop() {
+    $('set-shop').innerHTML = '<div class="form"><div class="field"><label for="ws-shop">Name der Werkstatt</label><input id="ws-shop" data-set="shop" autocomplete="off" value="' + esc(settings.shop) + '"></div>' +
+      settings.lanes.map((l, i) => '<div class="row2"><div class="field"><label for="ws-name-' + i + '">Mechaniker ' + (i + 1) + '</label><input id="ws-name-' + i + '" data-set="lane-name" data-i="' + i + '" autocomplete="off" value="' + esc(l.name) + '"></div>' +
+        '<div class="field"><label for="ws-place-' + i + '">Arbeitsplatz</label><input id="ws-place-' + i + '" data-set="lane-place" data-i="' + i + '" autocomplete="off" value="' + esc(l.place) + '"></div></div>').join('') +
+      '</div><p class="hint">Die Namen der Mechaniker stehen über den Spalten der Tafel.</p>';
+  }
+  function drawAway() {
+    const who = (lane) => (lane == null ? 'Beide (Werkstatt zu)' : settings.lanes[lane].name);
+    const span = (x) => dfNum.format(fromKey(x.from)) + (x.to > x.from ? ' bis ' + dfNum.format(fromKey(x.to)) : '');
+    $('set-away').innerHTML = '<p class="hint">In dieser Zeit lassen sich keine Termine anlegen, und die Terminsuche schlägt dort nichts vor.</p>' +
+      (settings.absences.length ? '<ul>' + settings.absences.map((x, i) =>
+        '<li class="ab"><strong>' + esc(who(x.lane)) + '</strong><span>' + span(x) + '</span><span>' + esc(x.label) + '</span>' +
+        '<button type="button" class="icon-btn" data-ab-del="' + i + '" aria-label="' + esc(who(x.lane) + ', ' + span(x) + ' löschen') + '">' + ICON.x + '</button></li>').join('') + '</ul>'
+        : '<p class="empty" style="margin-inline:0">Keine Abwesenheit eingetragen.</p>') +
+      '<form class="form" id="abNew" novalidate><h3 class="section-t">Neue Abwesenheit</h3><div class="row4">' +
+      '<div class="field"><label for="ab-who">Wer</label><select id="ab-who">' + opt('', who(null), true) + settings.lanes.map((l, i) => opt(i, l.name)).join('') + '</select></div>' +
+      '<div class="field"><label for="ab-from">Von</label><input id="ab-from" type="date"></div>' +
+      '<div class="field"><label for="ab-to">Bis</label><input id="ab-to" type="date"></div>' +
+      '<div class="field"><label for="ab-why">Grund</label><input id="ab-why" autocomplete="off" placeholder="zum Beispiel: Urlaub"></div></div>' +
+      '<div><button type="submit" class="btn quiet">' + ICON.plus + 'Abwesenheit hinzufügen</button></div></form>';
+  }
+  function applySettings(regen, note) {
+    const saved = saveSettings();
+    if (regen) {
+      setClock();
+      seed();
+      undoStack.length = 0;
+      $('toasts').replaceChildren();
+      toast(note || 'Beispieltermine neu erzeugt. Selbst angelegte Termine bleiben.');
+    }
+    fitBoard();
+    if (selId && !BY.has(selId)) { selId = null; if (view === 'detail') view = 'idle'; }
+    refresh();
+    $('setNote').textContent = note || (!saved ? 'Speichern geht in diesem Browser nicht. Die Änderung gilt bis zum Neuladen.' : regen ? 'Gespeichert. Beispieltermine neu erzeugt, selbst angelegte Termine bleiben.' : 'Gespeichert.');
+  }
+  function showTab(tab, focus) {
+    setDlg.querySelectorAll('[role="tab"]').forEach((t) => {
+      t.setAttribute('aria-selected', String(t === tab));
+      t.tabIndex = t === tab ? 0 : -1;
+      $(t.getAttribute('aria-controls')).hidden = t !== tab;
+    });
+    if (focus) tab.focus();
+  }
+  $('setBtn').addEventListener('click', async () => {
+    if (view === 'form') { if (!(await dropDraft())) return; render(); }
+    drawServices(); drawHours(); drawAway(); drawShop();
+    $('setNote').textContent = 'Änderungen gelten sofort.';
+    setDlg.showModal();
+    setDlg.querySelector('[role="tab"][aria-selected="true"]').focus();
+  });
+  setDlg.addEventListener('change', (e) => {
+    const t = e.target, kind = t.dataset.set, s = settings.services[+t.dataset.i], wd = +t.dataset.d;
+    let regen = false, note = '';
+    if (kind === 'sv-name') {
+      const v = t.value.trim(), taken = settings.services.some((x) => x !== s && x.name.toLowerCase() === v.toLowerCase());
+      if (v && !taken) {
+        s.name = v;
+        t.closest('.sv').setAttribute('aria-label', v);
+        t.closest('.sv').querySelector('[data-sv-del]').setAttribute('aria-label', v + ' löschen');
+      } else if (taken) note = '„' + v + '“ gibt es schon.';
+      t.value = s.name;
+    } else if (kind === 'sv-dur') s.dur = +t.value;
+    else if (kind === 'sv-lane') s.lanes = t.value === '' ? null : [+t.value];
+    else if (kind === 'sv-day') {
+      const boxes = [...t.closest('.days').querySelectorAll('input')], on = boxes.filter((b) => b.checked).map((b) => +b.dataset.d);
+      if (on.length) s.days = on.length === boxes.length ? null : on;
+      else { t.checked = true; note = 'Mindestens ein Tag muss bleiben.'; }
+    } else if (kind === 'oh-on') {
+      if (t.checked) settings.hours[wd] = [9 * 60, 12 * 60]; else delete settings.hours[wd];
+      regen = true;
+    } else if (kind === 'oh-from') {
+      const h = settings.hours[wd];
+      settings.hours[wd] = [+t.value, Math.max(+t.value + STEP, Math.min(T1, +t.value + h[1] - h[0]))];
+      regen = true;
+    } else if (kind === 'oh-to') {
+      settings.hours[wd][1] = +t.value;
+      regen = true;
+    } else if (kind === 'shop') {
+      settings.shop = t.value.trim() || settings.shop;
+      t.value = settings.shop;
+    } else if (kind === 'lane-name' || kind === 'lane-place') {
+      const l = settings.lanes[+t.dataset.i], f = kind === 'lane-name' ? 'name' : 'place', v = t.value.trim();
+      regen = !!v && v !== l[f];
+      l[f] = t.value = v || l[f];
+    } else return;
+    applySettings(regen, note);
+    if (kind.startsWith('oh-')) { drawHours(); $(t.id).focus(); drawServices(); }
+    if (kind === 'lane-name') { drawServices(); drawAway(); }
+  });
+  setDlg.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const from = $('ab-from').value, to = $('ab-to').value || from, lane = $('ab-who').value === '' ? null : +$('ab-who').value;
+    if (!isKey(from)) { $('setNote').textContent = 'Bitte bei „Von“ ein Datum wählen.'; $('ab-from').focus(); return; }
+    if (!isKey(to) || to < from) { $('setNote').textContent = '„Bis“ liegt vor „Von“.'; $('ab-to').focus(); return; }
+    settings.absences.push({ lane, from, to, label: $('ab-why').value.trim() });
+    settings.absences.sort((x, y) => (x.from < y.from ? -1 : x.from > y.from ? 1 : 0));
+    const own = A.filter((a) => a.fresh && a.key >= todayKey && from <= a.key && a.key <= to && (lane == null || a.lane === lane));
+    applySettings(true, !own.length ? '' : 'Gespeichert. In dieser Zeit ' + (own.length === 1
+      ? 'liegt ein eigener Termin: ' + own[0].c.name + ', ' + dayLabel(own[0].key) + ' um ' + hm(own[0].start) + ' Uhr. Er bleibt bestehen.'
+      : 'liegen ' + own.length + ' eigene Termine. Sie bleiben bestehen.'));
+    drawAway();
+    $('ab-who').focus();
+  });
+  setDlg.addEventListener('click', async (e) => {
+    const t = e.target, tab = t.closest('[role="tab"]'), del = t.closest('[data-sv-del]'), abDel = t.closest('[data-ab-del]');
+    if (tab) showTab(tab);
+    else if (t.closest('[data-set-close]')) setDlg.close();
+    else if (t.closest('#svAdd')) {
+      let name = 'Neue Leistung';
+      for (let n = 2; svcOf(name); n++) name = 'Neue Leistung ' + n;
+      settings.services.push({ name, dur: 60, days: null, lanes: null });
+      applySettings(false);
+      drawServices();
+      const inp = $('sv-name-' + (settings.services.length - 1));
+      inp.focus(); inp.select();
+    } else if (del) {
+      const [gone] = settings.services.splice(+del.dataset.svDel, 1);
+      applySettings(false, '„' + gone.name + '“ gelöscht.');
+      drawServices();
+      $('sv-name-' + Math.min(+del.dataset.svDel, settings.services.length - 1)).focus();
+    } else if (abDel) {
+      settings.absences.splice(+abDel.dataset.abDel, 1);
+      applySettings(true);
+      drawAway();
+      const rest = setDlg.querySelectorAll('[data-ab-del]');
+      (rest[Math.min(+abDel.dataset.abDel, rest.length - 1)] || $('ab-who')).focus();
+    } else if (t.closest('#setReset')) {
+      if (!(await ask({ title: 'Demo zurücksetzen?', text: 'Einstellungen und Beispieltermine stehen danach wieder wie am Anfang. Eigene Termine und alle Änderungen gehen verloren.', keep: 'Behalten', act: 'Zurücksetzen' }))) return;
+      settings = defaults();
+      A.length = 0;
+      BY.clear();
+      applySettings(true, 'Demo zurückgesetzt. Einstellungen und Termine sind wieder wie am Anfang.');
+      try { localStorage.removeItem(STORE); localStorage.removeItem(KEEP); } catch (_) {}
+      drawServices(); drawHours(); drawAway(); drawShop();
+    }
+  });
+  setDlg.addEventListener('keydown', (e) => {
+    const tab = e.target.closest('[role="tab"]');
+    if (!tab) return;
+    const tabs = [...setDlg.querySelectorAll('[role="tab"]')], i = tabs.indexOf(tab);
+    const to = { ArrowRight: tabs[(i + 1) % tabs.length], ArrowLeft: tabs[(i - 1 + tabs.length) % tabs.length], Home: tabs[0], End: tabs[tabs.length - 1] }[e.key];
+    if (to) { e.preventDefault(); showTab(to, true); }
+  });
+
   let lastHour = hourPx();
-  window.addEventListener('resize', () => { const h = hourPx(); if (h !== lastHour) { lastHour = h; renderBoard(); } });
-  if (!simulated) setInterval(() => {
+  window.addEventListener('resize', () => { const h = hourPx(); if (h !== lastHour) { lastHour = h; renderMain(); } });
+  setInterval(() => {
     const n = new Date(); const m = n.getHours() * 60 + n.getMinutes();
-    if (m !== nowMin && key(n) === todayKey) { nowMin = m; if (!drag) { renderBar(); renderBoard(); } }
+    if (!simulated && m !== nowMin && key(n) === todayKey) { nowMin = m; if (!drag) { renderBar(); if (mode === 'day') renderBoard(); } }
   }, 30000);
+
+  /* Tagesliste: wird erst beim Drucken gezeichnet, auch über das Menü des Browsers */
+  window.addEventListener('beforeprint', () => {
+    const k = key(cur), list = dayAppts(k).sort((x, y) => x.start - y.start);
+    $('print').innerHTML = '<h1>' + esc(settings.shop) + '</h1><p>Tagesliste für ' + esc(dfLong.format(cur)) + '</p>' + settings.lanes.map((l, i) => {
+      const w = windowOf(k, i);
+      return '<h2>' + esc(l.name) + ' <span>' + esc(l.place + ', ' + (w ? hm(w.open) + ' bis ' + hm(w.close) + ' Uhr' : shutWord(k, i))) + '</span></h2>' +
+        '<table><thead><tr>' + ['Zeit', 'Kunde', 'Fahrzeug', 'Kennzeichen', 'Leistung', 'Notiz', 'Telefon'].map((t) => '<th scope="col">' + t + '</th>').join('') + '</tr></thead><tbody>' +
+        list.filter((a) => a.lane === i).map((a) => '<tr>' + [hm(a.start) + '–' + hm(a.start + a.dur), a.c.name, a.c.car, a.c.plate, a.service, a.note, a.c.phone].map((t) => '<td>' + esc(t) + '</td>').join('') + '</tr>').join('') +
+        ('<tr class="blank">' + '<td></td>'.repeat(7) + '</tr>').repeat(4) + '</tbody></table>';
+    }).join('');
+  });
 
   render();
   requestAnimationFrame(() => scrollToMinute(nowMin, false));
