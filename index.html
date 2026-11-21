@@ -196,7 +196,7 @@ kbd {
 .wd[aria-current="date"] .wd-m i { background: var(--ink); }
 
 /* Arbeitsfläche */
-.work { grid-row: 3; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-w); }
+.work { grid-row: 3; min-height: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr) var(--panel-w); }
 .scroller:focus { outline: 0; }
 .scroller, .month { position: relative; min-height: 0; overflow: auto; background: var(--board); overscroll-behavior: contain; scrollbar-color: var(--scroll) var(--board); }
 .plate { position: relative; display: grid; grid-template-columns: 3.5rem repeat(var(--lanes), minmax(12.5rem, 1fr)); min-width: 100%; }
@@ -250,6 +250,7 @@ kbd {
 .md-d { display: flex; align-items: baseline; gap: .35rem; font-size: 1rem; font-weight: 700; color: var(--ink); }
 .md-f, .md-a { font-weight: 600; color: var(--ink); }
 .md-a { overflow-wrap: anywhere; hyphens: auto; }
+.md-a .brief { display: none; }
 .md .wd-m { justify-self: stretch; }
 .md-s { display: inline-flex; align-items: center; gap: .3rem; padding: .1rem .45rem; border-radius: 2px; background: var(--card); color: var(--ink); font-size: .75rem; font-weight: 700; box-shadow: 0 0 0 1px var(--line); }
 .md-s svg { width: .65rem; height: .65rem; }
@@ -295,7 +296,8 @@ kbd {
 html.is-dragging, html.is-dragging * { cursor: grabbing !important; }
 
 /* Seitenleiste */
-.panel { min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--panel); border-left: 1px solid var(--line); }
+.side { min-height: 0; display: flex; flex-direction: column; }
+.panel { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--panel); border-left: 1px solid var(--line); }
 .p-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-bottom: 1rem; scrollbar-color: var(--scroll) var(--panel); }
 .p-head { display: flex; align-items: center; gap: .5rem; padding: 1.125rem .75rem .375rem 1.25rem; }
 .p-head h2 { flex: 1; font-size: 1rem; font-weight: 700; }
@@ -423,7 +425,8 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
 .f-actions { display: flex; gap: .5rem; padding-top: .25rem; }
 
 /* Meldungen */
-.toasts { position: fixed; left: max(1rem, env(safe-area-inset-left, 0px)); bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 20; display: grid; gap: .5rem; width: min(26rem, calc(100% - 2rem)); pointer-events: none; }
+.toasts { display: grid; gap: .5rem; pointer-events: none; }
+.toasts:empty { display: none; }
 .toast {
   pointer-events: auto; display: flex; align-items: flex-start; gap: .75rem; padding: .5rem .5rem .5rem .875rem;
   border-radius: var(--r); background: var(--bar); color: #FFFFFF; box-shadow: var(--sh-float); font-size: .875rem;
@@ -436,11 +439,7 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
 .toast .icon-btn:hover { background: var(--bar-chip); color: #FFFFFF; }
 .toast :focus-visible { outline-color: #FFFFFF; }
 @media (min-width: 68.8125rem) {
-  .work { grid-template-rows: minmax(0, 1fr) auto; }
-  .scroller, .month { grid-row: 1 / 3; }
-  .panel { grid-column: 2; grid-row: 1; }
-  .toasts { position: static; grid-column: 2; grid-row: 2; width: auto; padding: 0 .75rem; background: var(--panel); border-left: 1px solid var(--line); }
-  .toasts:not(:empty) { padding-block: .75rem; border-top: 1px solid var(--line); }
+  .toasts { padding: .75rem; background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
 }
 
 /* Rückfrage und Einstellungen */
@@ -452,7 +451,7 @@ dialog.ask h2 { font-size: 1.125rem; font-weight: 700; }
 dialog.ask p { margin-top: .4rem; color: var(--ink-2); }
 dialog.ask form { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1.25rem; }
 dialog.ask .btn.danger-fill { background: var(--danger-fill); color: #FFFFFF; }
-dialog.set { width: min(46rem, calc(100% - 2rem)); height: min(41rem, calc(100dvh - 2rem)); padding: 0; }
+dialog.set { width: min(52rem, calc(100% - 2rem)); height: min(41rem, calc(100dvh - 2rem)); padding: 0; }
 dialog.set[open] { display: flex; flex-direction: column; }
 .set-head { display: flex; align-items: center; gap: .5rem; padding: 1.125rem .75rem .625rem 1.25rem; }
 .set-head h2 { flex: 1; font-size: 1.125rem; font-weight: 700; }
@@ -491,16 +490,20 @@ dialog.set[open] { display: flex; flex-direction: column; }
 .check { display: inline-flex; align-items: center; gap: .5rem; min-height: var(--target); cursor: pointer; }
 .check input { width: 1.125rem; height: 1.125rem; margin: 0; }
 
-/* Schmale Fenster: Seitenleiste wird zur Fläche von unten */
+/* Schmale Fenster: Seitenleiste wird zur Fläche von unten, die Meldung sitzt auf ihrer Oberkante und verdeckt darin nichts */
 @media (max-width: 68.75rem) {
   .work { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; flex-direction: column-reverse; pointer-events: none; }
   .panel {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; max-height: 50dvh;
+    flex: none; max-height: 50dvh; pointer-events: auto;
     border-left: 0; border-radius: 10px 10px 0 0; box-shadow: var(--sh-float);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     transition: translate .2s var(--ease);
   }
-  .panel[data-view="idle"] { translate: 0 100%; visibility: hidden; }
+  .panel[data-view="idle"] { position: absolute; left: 0; right: 0; bottom: 0; translate: 0 100%; visibility: hidden; }
+  .toasts { align-self: flex-start; width: min(26rem, calc(100% - 2rem)); margin: 0 max(1rem, env(safe-area-inset-left, 0px)) .5rem; }
+  .side:has(.panel[data-view="idle"]) .toasts { margin-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+  html.is-dragging .toast { pointer-events: none; opacity: .4; }
   .app:has(.panel:not([data-view="idle"])) .week { display: none; }
   .app:has(.panel:not([data-view="idle"])) .plate, .app:has(.panel:not([data-view="idle"])) .month { padding-bottom: 50dvh; }
 }
@@ -514,11 +517,24 @@ dialog.set[open] { display: flex; flex-direction: column; }
   .btn.new .lbl, .btn.find .lbl, .sum .lg { display: none; }
   .btn.new, .btn.find { width: calc(var(--target) + .125rem); padding: 0; }
 }
+/* Solange das Fenster der Einstellungen nicht seine volle Breite hat, bekommt der Name der Leistung eine eigene Zeile */
+@media (max-width: 54rem) {
+  .sv-head { display: none; }
+  .sv { grid-template: "name name del" "dur lane lane" "days days days" / minmax(0, 1fr) minmax(0, 1fr) 2rem; padding: .625rem 0; }
+  .sv + .sv { border-top: 1px solid var(--line-soft); }
+  .sv-list { gap: 0; }
+  .sv-name { grid-area: name; }
+  .sv-dur { grid-area: dur; }
+  .sv-lane { grid-area: lane; }
+  .sv .days { grid-area: days; }
+  .sv .icon-btn { grid-area: del; }
+}
 @media (max-width: 45rem) {
   .bar { gap: .5rem; }
   .title { font-size: 1.25rem; }
   .trail { order: 3; flex-basis: 100%; }
   .search { max-width: none; }
+  .search kbd { display: none; }
   .sum { order: 4; padding: 0; font-size: .8125rem; }
   .seg { order: 5; margin-left: auto; }
   .mo-nav { margin-right: .5rem; }
@@ -529,6 +545,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
   .mo-h, .md { padding-inline: .3rem; }
   .md { font-size: .75rem; }
   .md-s svg { display: none; }
+  .md-a .full { display: none; }
+  .md-a .brief { display: inline; }
   .plate { grid-template-columns: 3rem repeat(var(--lanes), minmax(9.5rem, 1fr)); }
   .now { left: 3rem; }
   .row3 { grid-template-columns: 1fr 1fr; }
@@ -536,15 +554,6 @@ dialog.set[open] { display: flex; flex-direction: column; }
   .tabs { padding-inline: 1rem; flex-wrap: wrap; }
   .set-body { padding-inline: 1rem; }
   .set-foot { padding-inline: 1rem; }
-  .sv-head { display: none; }
-  .sv { grid-template: "name name del" "dur lane lane" "days days days" / minmax(0, 1fr) minmax(0, 1fr) 2rem; padding: .625rem 0; }
-  .sv + .sv { border-top: 1px solid var(--line-soft); }
-  .sv-list { gap: 0; }
-  .sv-name { grid-area: name; }
-  .sv-dur { grid-area: dur; }
-  .sv-lane { grid-area: lane; }
-  .sv .days { grid-area: days; }
-  .sv .icon-btn { grid-area: del; }
   .ab { grid-template-columns: minmax(0, 1fr) 2rem; }
   .ab .icon-btn { grid-column: 2; grid-row: 1 / span 3; }
   .row4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -625,8 +634,10 @@ dialog.set[open] { display: flex; flex-direction: column; }
       <div class="plate" id="plate"></div>
     </section>
     <section class="month" id="month" aria-label="Monat" hidden></section>
-    <aside class="panel" id="panel" data-view="idle" aria-labelledby="panelTitle"></aside>
-    <div class="toasts" id="toasts" role="region" aria-label="Meldungen"></div>
+    <div class="side">
+      <aside class="panel" id="panel" data-view="idle" aria-labelledby="panelTitle"></aside>
+      <div class="toasts" id="toasts" role="region" aria-label="Meldungen"></div>
+    </div>
   </main>
 </div>
 <section class="print" id="print"></section>
@@ -817,12 +828,13 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const x = absenceIn(settings, k, lane);
     return (dayWindow(k) ? 'nicht da' : 'geschlossen') + (x && x.label ? ' · ' + x.label : '');
   }
-  // Wer an einem offenen Wochentag fehlt und warum: ein Wort für die ganze Werkstatt, sonst eines je Mechaniker.
+  // Wer an einem offenen Wochentag fehlt und warum: ein Eintrag für die ganze Werkstatt, sonst einer je Mechaniker.
+  // „brief“ steht in schmalen Monatszellen: Ein langer Grund bricht dort ohne Trennwörterbuch mitten im Wort.
   function away(k) {
     if (!settings.hours[fromKey(k).getDay()]) return [];
     const xs = settings.lanes.map((_, lane) => absenceIn(settings, k, lane));
-    if (xs.every((x) => x && x.lane == null)) return [xs[0].label || 'geschlossen'];
-    return xs.map((x, lane) => x && settings.lanes[lane].name + ': ' + (x.label || 'nicht da')).filter(Boolean);
+    if (xs.every((x) => x && x.lane == null)) return [{ text: xs[0].label || 'geschlossen', brief: 'zu' }];
+    return xs.map((x, lane) => x && { text: settings.lanes[lane].name + ': ' + (x.label || 'nicht da'), brief: settings.lanes[lane].name + ' fehlt' }).filter(Boolean);
   }
   const capacity = (k) => laneWindows(k).reduce((sum, w) => sum + (w ? w.close - w.open : 0), 0);
   const openWeekdays = () => [1, 2, 3, 4, 5, 6, 0].filter((wd) => settings.hours[wd]);
@@ -874,13 +886,20 @@ dialog.set[open] { display: flex; flex-direction: column; }
   function seed() {
     for (let i = A.length - 1; i >= 0; i--) if (!A[i].fresh) { BY.delete(A[i].id); A.splice(i, 1); }
     const add = (k, lane, start, len, c, service, note) => A.push({ id: seq++, key: k, lane, start, dur: len, c, service, note, status: null });
+    // Lange Arbeiten brauchen ein ganzes Zeitfenster. Das längste der nächsten drei Wochen bleibt darum bei einem Mechaniker leer.
+    const soon = nextOpenDay(addDays(today, 3)), soonKey = soon && key(soon);
+    let spare = null;
+    for (let off = 1; off <= 20; off++) settings.lanes.forEach((_, lane) => {
+      const k = key(addDays(today, off)), w = windowOf(k, lane);
+      if (w && w.close - w.open > (spare ? spare.len : 0) && !(k === soonKey && lane === 1)) spare = { k, lane, len: w.close - w.open };
+    });
     for (let off = -SEED_BACK; off <= SEED_AHEAD; off++) {
       const k = key(addDays(today, off)), r = rng('tag' + k), used = new Set();
       // Auslastung schwankt mit Absicht: volle, halbe und fast leere Tage. Heute ist nie leer.
       const load = Math.max(off ? 0 : .6, pick(r, LOADS)), solo = load > .3 ? -1 : Math.floor(r() * settings.lanes.length);
       settings.lanes.forEach((_, lane) => {
         const w = windowOf(k, lane);
-        if (!w || (solo >= 0 && solo !== lane)) return;
+        if (!w || (solo >= 0 && solo !== lane) || (spare && spare.k === k && spare.lane === lane)) return;
         const budget = load * (w.close - w.open), can = settings.services.filter((s) => dayOk(s, k) && laneOk(s, lane));
         let at = w.open + (load > .8 ? 0 : pick(r, [0, 15, 30, 60])), sum = 0;
         while (sum < budget) {
@@ -906,7 +925,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
       if (!clash(k, lane, start, len)) add(k, lane, start, len, c, service, note);
     };
     put(today, 0, 30, 90, 'Sabine Bauer', 'Auspuff', 'Kundin wartet');
-    put(nextOpenDay(addDays(today, 3)), 1, 120, 30, 'Bauer Gartenbau GmbH', 'Reifenwechsel', '');
+    put(soon, 1, 120, 30, 'Bauer Gartenbau GmbH', 'Reifenwechsel', '');
     put(nextOpenDay(addDays(today, -35)), 1, 30, 45, 'Sabine Bauer', 'Ölwechsel', '');
     A.forEach(enroll);
     saveAppts();
@@ -937,7 +956,9 @@ dialog.set[open] { display: flex; flex-direction: column; }
   /* ---------- Termine merken: Stand im Browser, gültig für diesen Tag und diese Zeiten ---------- */
   const KEEP = STORE + '-termine';
   const CID = new Map(CUSTOMERS.map((c, i) => [c, i]));
-  const seedBasis = () => JSON.stringify([settings.hours, settings.absences]);
+  // Zählt hoch, sobald seed() andere Beispiele erzeugt. Gespeicherte Beispiele von davor werden dann neu erzeugt.
+  const SEED_REV = 2;
+  const seedBasis = () => JSON.stringify([SEED_REV, settings.hours, settings.absences]);
   function saveAppts() {
     // Bekannte Kunden als Nummer, damit sie nach dem Laden dieselben bleiben. Stand nur, wenn ihn jemand gesetzt hat.
     const list = A.map((a) => ({ id: a.id, key: a.key, lane: a.lane, start: a.start, dur: a.dur, c: CID.get(a.c) ?? a.c, service: a.service, note: a.note, fresh: !!a.fresh, status: a.fresh || a.manual ? a.status : null, since: a.since }));
@@ -956,14 +977,27 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const ids = new Set(), list = snap && Array.isArray(snap.list) ? snap.list.map(readAppt).filter((a) => a && !ids.has(a.id) && ids.add(a.id)) : null;
     const same = list && snap.today === todayKey && snap.basis === seedBasis();
     if (list) A.push(...(same ? list : list.filter((a) => a.fresh && a.key >= todayKey)));
+    // „seit“ ist eine Uhrzeit von heute und gilt an keinem anderen Tag.
+    if (snap && snap.today !== todayKey) for (const a of A) a.since = null;
     seq = A.reduce((m, a) => Math.max(m, a.id), 0) + 1;
     if (same) A.forEach(enroll); else seed();
   }
   // Jede Änderung an Terminen läuft hier durch: für Rückgängig merken, dann speichern.
-  function changed(label, back) {
-    undoStack.push({ label, fn: back });
+  // „gone“: Rückgängig holt den Termin zurück. „slot“: der Platz, den er danach wieder braucht. Ältere Angebote zum selben Termin gelten nicht mehr.
+  function changed(a, back, need = {}) {
+    dropToasts((t) => t._undo && t._undo.a === a);
+    undoStack.push({ a, back, gone: !!need.gone, slot: need.slot });
     if (undoStack.length > 30) undoStack.shift();
     saveAppts();
+  }
+  const place = (a) => ({ key: a.key, lane: a.lane, start: a.start, dur: a.dur });
+  const when = (a) => a.c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name;
+  // Einziger Weg von der Tafel. Was gerade auf den Termin zeigt, schließt mit.
+  function take(a) {
+    const i = A.indexOf(a);
+    if (i < 0) return;
+    A.splice(i, 1); BY.delete(a.id);
+    if (selId === a.id) { selId = null; formState = null; view = 'idle'; }
   }
   loadAppts();
   fitBoard();
@@ -1032,7 +1066,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const mon = monday(cur);
     let h = '<button type="button" class="wk-nav" data-wk="-7" aria-label="Vorherige Woche">' + ICON.left + '</button>';
     for (const wd of openWeekdays()) {
-      const d = addDays(mon, (wd + 6) % 7), dk = key(d), s = dayStat(dk), shut = s.off.length === 1 ? s.off[0] : 'geschlossen';
+      const d = addDays(mon, (wd + 6) % 7), dk = key(d), s = dayStat(dk), shut = s.off.length === 1 ? s.off[0].text : 'geschlossen';
       h += '<button type="button" class="wd" data-k="' + dk + '"' + (dk === k ? ' aria-current="date"' : '') + ' aria-label="' + esc(dfTitle.format(d) + ', ' + (s.cap ? fmtHours(s.free) + ' Stunden frei' : shut)) + '">' +
         '<span class="wd-d">' + esc(dfDay.format(d)) + ' ' + d.getDate() + (dk === todayKey ? '<small>heute</small>' : '') + '</span>' +
         '<span class="wd-f">' + (s.cap ? fmtHours(s.free) + ' Std. frei' : esc(shut)) + '</span><span class="wd-m" aria-hidden="true"><i style="width:' + s.load + '%"></i></span></button>';
@@ -1108,12 +1142,12 @@ dialog.set[open] { display: flex; flex-direction: column; }
       weeks.map((row) => '<div role="row">' + row.map((d) => {
         if (!d) return '<span role="gridcell"></span>';
         const k = key(d), s = dayStat(k), fit = fits && fits.get(k), count = s.n ? nAppts(s.n) : s.cap ? 'keine Termine' : '';
-        const said = [s.cap ? fmtHours(s.free) + ' Stunden frei' : '', ...s.off, count, fit != null ? 'frei ab ' + hm(fit) + ' Uhr' : ''].filter(Boolean);
+        const said = [s.cap ? fmtHours(s.free) + ' Stunden frei' : '', ...s.off.map((o) => o.text), count, fit != null ? 'frei ab ' + hm(fit) + ' Uhr' : ''].filter(Boolean);
         return '<div role="gridcell"><button type="button" class="md' + (s.cap ? '' : ' closed') + (k === on ? ' on' : '') + '" data-k="' + k + '" tabindex="' + (k === tab ? 0 : -1) + '"' +
           (k === todayKey ? ' aria-current="date"' : '') + ' aria-label="' + esc(dfTitle.format(d) + ', ' + said.join(', ')) + '">' +
           '<span class="md-d">' + d.getDate() + (k === todayKey ? '<small>heute</small>' : '') + '</span>' +
           (s.cap ? '<span class="md-f">' + fmtHours(s.free) + ' Std. frei</span><span class="wd-m" aria-hidden="true"><i style="width:' + s.load + '%"></i></span>' : '') +
-          s.off.map((t) => '<span class="md-a">' + esc(t) + '</span>').join('') +
+          s.off.map((o) => '<span class="md-a"><span class="full">' + esc(o.text) + '</span><span class="brief">' + esc(o.brief) + '</span></span>').join('') +
           (count ? '<span class="md-n">' + count + '</span>' : '') +
           (fit != null ? '<span class="md-s">' + ICON.ok + 'ab ' + hm(fit) + '</span>' : '') + '</button></div>';
       }).join('') + '</div>').join('') + '</div>';
@@ -1348,19 +1382,26 @@ dialog.set[open] { display: flex; flex-direction: column; }
       '<section><h3 class="section-t">Weitere Termine dieses Fahrzeugs</h3>' + (hist.length ? '<div class="hist">' + hist.map((x) => itemHtml(x, null, { statusOnly: true })).join('') + '</div>' : '<p class="empty" style="margin:0">Das ist der erste Termin dieses Fahrzeugs.</p>') + '</section>' +
       '</div></div>';
   }
-  // Erinnert wird nur an Termine, die noch kommen. Abholen geht bis zum Feierabend des heutigen Tages, auch wenn der Termin an einem anderen lag.
+  // Erinnert wird nur an Termine, die noch kommen. Abholen geht am Tag des Termins, nach einem vergangenen heute,
+  // bis der Mechaniker Feierabend hat. Fehlt er an dem Tag, zählt die Werkstatt.
   const MSG = {
     plan: (a) => (a.key < todayKey || (a.key === todayKey && a.start <= nowMin) ? null
       : 'Erinnerung: ' + (nearDay(a.key) || dfTitle.format(fromKey(a.key))) + ', ' + hm(a.start) + ' Uhr, ' + a.service + ' bei ' + settings.shop + '. Wenn es nicht passt, rufen Sie bitte an.'),
-    done: () => { const w = dayWindow(todayKey); return 'Ihr Fahrzeug ist fertig.' + (w ? ' Sie können es heute bis ' + hm(w.close) + ' Uhr bei ' + settings.shop + ' abholen.' : ''); },
+    done: (a) => {
+      const k = a.key > todayKey ? a.key : todayKey, w = windowOf(k, a.lane) || dayWindow(k);
+      const day = (nearDay(k) || '').toLowerCase() || 'am ' + dfTitle.format(fromKey(k));
+      return 'Ihr Fahrzeug ist fertig.' + (w ? ' Sie können es ' + day + ' bis ' + hm(w.close) + ' Uhr bei ' + settings.shop + ' abholen.' : '');
+    },
   };
+  const AGAIN = { plan: 'ist wieder geplant', da: 'steht wieder auf „Fahrzeug da“', work: 'ist wieder in Arbeit', done: 'ist wieder fertig', gone: 'ist wieder abgeholt' };
   function setStatus(a, s, how) {
     const prev = a.status, prevSince = a.since, prevManual = a.manual;
     if (prev === s) return;
     a.status = s;
     a.manual = true;
-    a.since = s === 'work' ? (a.key === todayKey ? nowMin : a.start) : a.since;
-    changed(a.c.name + ': ' + ST[prev], () => { a.status = prev; a.since = prevSince; a.manual = prevManual; refresh(a.id); });
+    // Die Arbeit beginnt in dem Moment, in dem es jemand meldet, auch wenn der Termin an einem anderen Tag steht.
+    if (s === 'work') a.since = nowMin;
+    changed(a, () => { a.status = prev; a.since = prevSince; a.manual = prevManual; refresh(a.id); return a.c.name + ' ' + AGAIN[prev] + '.'; });
     const sel = ['.card[data-id="' + a.id + '"] .card-head', '.d-state'];
     const old = sel.map((x) => { const el = document.querySelector(x); if (!el) return null; const cs = getComputedStyle(el); return { bg: cs.backgroundColor, fg: cs.color }; });
     refresh(a.id);
@@ -1507,20 +1548,20 @@ dialog.set[open] { display: flex; flex-direction: column; }
     let a;
     if (formState.mode === 'edit') {
       a = BY.get(formState.id);
-      const before = { key: a.key, lane: a.lane, start: a.start, dur: a.dur, c: a.c, service: a.service, note: a.note };
+      const before = { ...place(a), c: a.c, service: a.service, note: a.note };
       const known = CUSTOMERS.find((c) => c.name === vals.name);
       a.c = known && known.plate === vals.plate ? known : { name: vals.name, phone: vals.phone, plate: vals.plate, car: vals.car };
       Object.assign(a, { key: v.day, lane: v.lane, start: v.start, dur: v.len, service: vals.service, note: vals.note });
       index(a);
-      changed('Änderung an ' + a.c.name, () => { Object.assign(a, before); index(a); refresh(a.id); });
-      toast('Gespeichert: ' + a.c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { undo: true });
+      changed(a, () => { Object.assign(a, before); index(a); refresh(a.id); return 'Änderung zurückgenommen: ' + when(a) + '.'; }, { slot: before });
+      toast('Gespeichert: ' + when(a) + '.', { undo: true });
     } else {
       const known = CUSTOMERS.find((c) => c.name === vals.name);
       const c = known && (!vals.plate || known.plate === vals.plate) ? known : { name: vals.name, phone: vals.phone || '', plate: vals.plate, car: vals.car };
       a = { id: seq++, key: v.day, lane: v.lane, start: v.start, dur: v.len, c, service: vals.service, note: vals.note, status: 'plan', since: null, fresh: true };
       index(a); A.push(a); BY.set(a.id, a);
-      changed('Neuer Termin ' + c.name, () => { A.splice(A.indexOf(a), 1); BY.delete(a.id); if (selId === a.id) { selId = null; view = 'idle'; } refresh(); });
-      toast('Termin angelegt: ' + c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { undo: true });
+      changed(a, () => { take(a); refresh(); return 'Neuer Termin wieder entfernt: ' + when(a) + '.'; });
+      toast('Termin angelegt: ' + when(a) + '.', { undo: true });
     }
     formState = null;
     finder = null;
@@ -1598,7 +1639,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
   }
   function renderSlots() {
     const svc = finderService(), first = finder.from > todayKey ? finder.from : todayKey;
-    const all = findSlots(A, settings, { service: svc, from: finder.from, part: finder.part, lane: finder.lane, days: 56, now: { key: todayKey, min: nowMin } });
+    const query = { service: svc, from: finder.from, part: finder.part, lane: finder.lane, days: 56, now: { key: todayKey, min: nowMin } };
+    const all = findSlots(A, settings, query);
     const shown = [];
     let more = false, n = 0;
     for (const s of all) {
@@ -1613,7 +1655,12 @@ dialog.set[open] { display: flex; flex-direction: column; }
     $('fi-rule').textContent = svc.name + ' dauert ' + dur(svc.dur) + (rule && rule + '.');
     let h = '';
     if (!shown.length) {
-      h = '<p class="empty">In den acht Wochen ab ' + (first === todayKey ? 'heute' : 'dem ' + dfDate.format(fromKey(first))) + ' ist für ' + esc(svc.name) + ' nichts frei.' +
+      const span = (first === todayKey ? 'in den nächsten acht Wochen' : 'in den acht Wochen ab dem ' + dfDate.format(fromKey(first))) + { any: '', am: ' vormittags', pm: ' nachmittags' }[finder.part];
+      // Fände eine Viertelstunde Platz, fehlt nicht freie Zeit, sondern Zeit am Stück. Ohne Termine gerechnet zeigt sich, ob schon die Öffnungszeit zu kurz ist.
+      const tooLong = findSlots(A, settings, { ...query, service: { ...svc, dur: STEP } }).length > 0, opens = tooLong && findSlots([], settings, query).length > 0;
+      h = '<p class="empty">' + (!tooLong ? 'In den acht Wochen ab ' + (first === todayKey ? 'heute' : 'dem ' + dfDate.format(fromKey(first))) + ' ist für ' + esc(svc.name) + ' nichts frei.'
+        : esc(svc.name) + ' dauert ' + dur(svc.dur) + ' So lange ' + (!opens ? 'am Stück hat die Werkstatt ' + span + ' nicht geöffnet.'
+          : finder.lane == null ? 'ist ' + span + ' kein Mechaniker am Stück frei.' : 'ist ' + esc(settings.lanes[finder.lane].name) + ' ' + span + ' nicht am Stück frei.')) +
         (finder.part !== 'any' || finder.lane != null ? ' Mit „egal“ bei Tageszeit und Mechaniker findet sich vielleicht etwas.' : '') + '</p>';
     } else {
       h = '<div role="listbox" aria-label="Freie Termine">';
@@ -1690,33 +1737,66 @@ dialog.set[open] { display: flex; flex-direction: column; }
     live.textContent = '';
     setTimeout(() => { live.textContent = t; }, 30);
   }
+  function closeToast(el) { clearTimeout(el._timer); el.remove(); }
+  const dropToasts = (hit) => [...$('toasts').children].filter(hit).forEach(closeToast);
   function toast(text, opts = {}) {
     const box = $('toasts');
     const el = document.createElement('div');
     el.className = 'toast' + (opts.bad ? ' bad' : '');
     el._undo = opts.undo ? undoStack[undoStack.length - 1] : null;
     el.innerHTML = (opts.bad ? WARN : '') + '<p>' + esc(text) + '</p>' + (opts.undo ? '<button type="button" class="btn" data-undo>Rückgängig</button>' : '') + '<button type="button" class="icon-btn" data-dismiss aria-label="Meldung schließen">' + ICON.x + '</button>';
+    // Über der Fläche von unten ist nur Platz für eine Meldung.
+    const keep = matchMedia('(max-width: 68.75rem)').matches ? 0 : 2;
+    while (box.children.length > keep) closeToast(box.firstElementChild);
     box.appendChild(el);
-    while (box.children.length > 3) box.firstElementChild.remove();
+    // Meldungen gehen von selbst, außer jemand zeigt darauf oder steht darin. Hinter einem offenen Dialog warten sie, bis er zu ist.
+    let hover = false, focus = false;
+    el._arm = () => {
+      clearTimeout(el._timer);
+      if (!hover && !focus && !document.querySelector('dialog[open]')) el._timer = setTimeout(closeToast, opts.undo || opts.bad ? 8000 : 5000, el);
+    };
+    el.addEventListener('pointerenter', () => { hover = true; el._arm(); });
+    el.addEventListener('pointerleave', () => { hover = false; el._arm(); });
+    el.addEventListener('focusin', () => { focus = true; el._arm(); });
+    el.addEventListener('focusout', () => { focus = false; el._arm(); });
+    el._arm();
     announce(text + (opts.undo ? ' Rückgängig mit Steuerung plus Z.' : ''));
   }
+  document.addEventListener('close', () => { for (const t of $('toasts').children) t._arm(); }, true);
+  // Warum ein Eintrag nicht mehr passt: Der Termin ist weg oder schon wieder da, oder sein alter Platz ist inzwischen vergeben.
+  function undoBlock(u) {
+    const a = u.a, s = u.slot, here = BY.get(a.id) === a;
+    if (here === u.gone) return a.c.name + (here ? ' steht schon wieder auf der Tafel.' : ' steht nicht mehr auf der Tafel.');
+    const c = s && clash(s.key, s.lane, s.start, s.dur, a.id);
+    return c ? settings.lanes[s.lane].name + ' ist inzwischen von ' + hm(c.start) + ' bis ' + hm(c.start + c.dur) + ' Uhr belegt (' + c.c.name + ').' : null;
+  }
   function undo(entry) {
-    let u;
-    if (entry) { const i = undoStack.indexOf(entry); if (i < 0) { toast('Das wurde schon rückgängig gemacht.'); return; } u = undoStack.splice(i, 1)[0]; }
-    else u = undoStack.pop();
-    if (!u) { toast('Es gibt nichts rückgängig zu machen.'); return; }
-    u.fn();
+    // Beim Ziehen bleibt alles stehen, sonst hält die Hand eine Karte, deren Termin es nicht mehr gibt.
+    if (drag) return;
+    const u = entry || undoStack[undoStack.length - 1], i = undoStack.indexOf(u);
+    dropToasts((t) => t._undo === u);
+    if (i < 0) { toast(entry ? 'Das wurde schon rückgängig gemacht.' : 'Es gibt nichts rückgängig zu machen.'); return; }
+    undoStack.splice(i, 1);
+    const no = undoBlock(u);
+    if (no) { toast('Rückgängig geht nicht mehr: ' + no, { bad: true }); return; }
+    const said = u.back();
+    // War es das Anlegen, ist der Termin endgültig weg, und mit ihm alles, was sich noch auf ihn bezieht.
+    if (!BY.has(u.a.id)) {
+      for (let n = undoStack.length - 1; n >= 0; n--) if (undoStack[n].a === u.a) undoStack.splice(n, 1);
+      dropToasts((t) => t._undo && t._undo.a === u.a);
+    }
     saveAppts();
-    toast('Rückgängig gemacht: ' + u.label + '.');
+    toast(said);
   }
   $('toasts').addEventListener('click', (e) => {
     const t = e.target.closest('.toast');
     if (!t) return;
-    if (e.target.closest('[data-undo]')) { const u = t._undo; t.remove(); undo(u); }
+    if (e.target.closest('[data-undo]')) undo(t._undo);
     else if (e.target.closest('[data-dismiss]')) {
       const next = t.nextElementSibling || t.previousElementSibling;
-      t.remove();
-      (next ? next.querySelector('[data-dismiss]') : q).focus();
+      closeToast(t);
+      // Nicht ins Suchfeld: Auf dem Handy ginge sonst die Tastatur auf.
+      (next ? next.querySelector('[data-dismiss]') : mode === 'day' ? scroller : monthEl.querySelector('[tabindex="0"]') || q).focus({ preventScroll: true });
     }
   });
 
@@ -1724,9 +1804,9 @@ dialog.set[open] { display: flex; flex-direction: column; }
   function moveTo(a, lane, start, how) {
     const p = slotProblem({ day: a.key, lane, start, len: a.dur }, a.id);
     if (p) { toast(p.text + ' ' + a.c.name + ' bleibt um ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.', { bad: true }); return false; }
-    const before = { lane: a.lane, start: a.start };
+    const before = place(a);
     a.lane = lane; a.start = start; index(a);
-    changed('Verschieben von ' + a.c.name, () => { a.lane = before.lane; a.start = before.start; index(a); refresh(a.id); });
+    changed(a, () => { a.lane = before.lane; a.start = before.start; index(a); refresh(a.id); return a.c.name + ' ist wieder um ' + hm(a.start) + ' Uhr bei ' + settings.lanes[a.lane].name + '.'; }, { slot: before });
     if (how !== 'key') toast(a.c.name + ' verschoben: ' + settings.lanes[lane].name + ', ' + hm(start) + ' Uhr.', { undo: true });
     else announce(a.c.name + ': ' + settings.lanes[lane].name + ', ' + hm(start) + ' Uhr.');
     return true;
@@ -1897,10 +1977,9 @@ dialog.set[open] { display: flex; flex-direction: column; }
     if (t.closest('[data-cancel]') && a) {
       const ok = await ask({ title: 'Termin absagen?', text: a.c.name + ', ' + dayLabel(a.key) + ' um ' + hm(a.start) + ' Uhr, ' + a.service + '.', keep: 'Termin behalten', act: 'Absagen' });
       if (!ok) return;
-      const i = A.indexOf(a);
-      A.splice(i, 1); BY.delete(a.id);
-      changed('Absage von ' + a.c.name, () => { A.push(a); BY.set(a.id, a); openDetail(a.id, false); });
-      selId = null; view = 'idle';
+      take(a);
+      // Ein offenes Formular bleibt stehen: Die Eingaben darin sind noch nicht gespeichert.
+      changed(a, () => { A.push(a); BY.set(a.id, a); if (view === 'form' || view === 'finder') refresh(a.id); else openDetail(a.id, false); return 'Absage zurückgenommen: ' + when(a) + '.'; }, { gone: true, slot: place(a) });
       render();
       toast('Abgesagt: ' + a.c.name + ', ' + dayLabel(a.key) + ' ' + hm(a.start) + ' Uhr.', { undo: true });
       return;
@@ -2010,7 +2089,24 @@ dialog.set[open] { display: flex; flex-direction: column; }
   panel.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) hoverSlot(e); });
 
   /* ---------- Kopf und Woche: Bedienung ---------- */
-  q.addEventListener('input', runSearch);
+  // Die Suche ersetzt die Seitenleiste. Ein angefangener Termin darin geht nicht ohne Rückfrage verloren.
+  q.addEventListener('input', async () => {
+    if (view === 'form' || view === 'finder') {
+      if (!(await dropDraft())) { q.value = ''; $('panelTitle').focus(); return; }
+      // Nach der Rückfrage nimmt das Feld in Chromium erst nach neuem Fokus wieder Text an.
+      q.blur(); q.focus();
+    }
+    runSearch();
+  });
+  // Der Hinweis im Suchfeld wird nie abgeschnitten: Es steht die längste Fassung da, die hineinpasst.
+  const HINTS = ['Name, Kennzeichen, Telefon', 'Name, Kennzeichen', 'Suchen'], pen = document.createElement('canvas').getContext('2d');
+  function fitHint() {
+    const cs = getComputedStyle(q);
+    pen.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    q.placeholder = HINTS.find((t) => pen.measureText(t).width <= q.clientWidth) || HINTS[HINTS.length - 1];
+  }
+  new ResizeObserver(fitHint).observe(q);
+  document.fonts.ready.then(fitHint);
   q.addEventListener('keydown', (e) => {
     if (e.isComposing) return;
     if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(1); }
@@ -2144,7 +2240,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
       setClock();
       seed();
       undoStack.length = 0;
-      $('toasts').replaceChildren();
+      dropToasts(() => true);
       toast(note || 'Beispieltermine neu erzeugt. Selbst angelegte Termine bleiben.');
     }
     fitBoard();
@@ -2170,13 +2266,14 @@ dialog.set[open] { display: flex; flex-direction: column; }
   setDlg.addEventListener('change', (e) => {
     const t = e.target, kind = t.dataset.set, s = settings.services[+t.dataset.i], wd = +t.dataset.d;
     let regen = false, note = '';
+    const filled = (old, what = 'Name') => { const v = t.value.trim(); if (!v) note = what + ' darf nicht leer sein, alter ' + what + ' bleibt.'; return (t.value = v || old); };
     if (kind === 'sv-name') {
       const v = t.value.trim(), taken = settings.services.some((x) => x !== s && x.name.toLowerCase() === v.toLowerCase());
       if (v && !taken) {
         s.name = v;
         t.closest('.sv').setAttribute('aria-label', v);
         t.closest('.sv').querySelector('[data-sv-del]').setAttribute('aria-label', v + ' löschen');
-      } else if (taken) note = '„' + v + '“ gibt es schon.';
+      } else note = taken ? '„' + v + '“ gibt es schon.' : 'Name darf nicht leer sein, alter Name bleibt.';
       t.value = s.name;
     } else if (kind === 'sv-dur') s.dur = +t.value;
     else if (kind === 'sv-lane') s.lanes = t.value === '' ? null : [+t.value];
@@ -2195,12 +2292,13 @@ dialog.set[open] { display: flex; flex-direction: column; }
       settings.hours[wd][1] = +t.value;
       regen = true;
     } else if (kind === 'shop') {
-      settings.shop = t.value.trim() || settings.shop;
-      t.value = settings.shop;
-    } else if (kind === 'lane-name' || kind === 'lane-place') {
-      const l = settings.lanes[+t.dataset.i], f = kind === 'lane-name' ? 'name' : 'place', v = t.value.trim();
-      regen = !!v && v !== l[f];
-      l[f] = t.value = v || l[f];
+      settings.shop = filled(settings.shop);
+    } else if (kind === 'lane-name') {
+      settings.lanes[+t.dataset.i].name = filled(settings.lanes[+t.dataset.i].name);
+      // Der Name steht im Suchindex jedes Termins. Die Beispiele selbst hängen nicht an ihm und bleiben, wie sie sind.
+      A.forEach(index);
+    } else if (kind === 'lane-place') {
+      settings.lanes[+t.dataset.i].place = filled(settings.lanes[+t.dataset.i].place, 'Arbeitsplatz');
     } else return;
     applySettings(regen, note);
     if (kind.startsWith('oh-')) { drawHours(); $(t.id).focus(); drawServices(); }
