@@ -528,11 +528,12 @@ dialog.set[open] { display: flex; flex-direction: column; }
   .mo { grid-auto-rows: minmax(6rem, auto); }
   .mo-h, .md { padding-inline: .3rem; }
   .md { font-size: .75rem; }
+  .md-s svg { display: none; }
   .plate { grid-template-columns: 3rem repeat(var(--lanes), minmax(9.5rem, 1fr)); }
   .now { left: 3rem; }
   .row3 { grid-template-columns: 1fr 1fr; }
   .set-head { padding-left: 1rem; }
-  .tabs { padding-inline: 1rem; }
+  .tabs { padding-inline: 1rem; flex-wrap: wrap; }
   .set-body { padding-inline: 1rem; }
   .set-foot { padding-inline: 1rem; }
   .sv-head { display: none; }
@@ -1116,6 +1117,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
           (count ? '<span class="md-n">' + count + '</span>' : '') +
           (fit != null ? '<span class="md-s">' + ICON.ok + 'ab ' + hm(fit) + '</span>' : '') + '</button></div>';
       }).join('') + '</div>').join('') + '</div>';
+    revealDay(on);
   }
   function renderMain() { if (mode === 'month') renderMonth(); else renderBoard(); }
   function render() { renderBar(); renderMain(); renderPanel(); }
@@ -1126,17 +1128,17 @@ dialog.set[open] { display: flex; flex-direction: column; }
   }
 
   const sheetMode = () => matchMedia('(max-width: 68.75rem)').matches && panel.dataset.view !== 'idle';
-  function visibleBoard() {
-    if (!sheetMode()) return scroller.clientHeight;
-    const top = scroller.getBoundingClientRect().top;
-    return Math.max(96, Math.min(scroller.clientHeight, innerHeight - panel.offsetHeight - top));
+  function visibleHeight(el) {
+    if (!sheetMode()) return el.clientHeight;
+    const top = el.getBoundingClientRect().top;
+    return Math.max(96, Math.min(el.clientHeight, innerHeight - panel.offsetHeight - top));
   }
   const scrollHow = (smooth) => (smooth && !reduceMotion() ? 'smooth' : 'auto');
   function minuteTop(min) {
     const head = plateEl.querySelector('.lh');
     const hh = head ? head.offsetHeight : 0;
     const y = ((min - boardFrom) * hourPx()) / 60 + hh;
-    const vis = visibleBoard();
+    const vis = visibleHeight(scroller);
     return Math.max(0, y - hh - Math.min(vis * 0.3, Math.max(8, (vis - hh) * 0.15)));
   }
   function scrollToMinute(min, smooth) { scroller.scrollTo({ top: minuteTop(min), behavior: scrollHow(smooth) }); }
@@ -1146,9 +1148,15 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const lane = el.parentElement, lx = lane.offsetLeft, rx = lx + lane.offsetWidth;
     // Ein Aufruf für beide Richtungen: Ein zweites weiches Rollen bricht das erste ab.
     const to = {};
-    if (top - head < scroller.scrollTop || bottom > scroller.scrollTop + visibleBoard()) to.top = minuteTop(start);
+    if (top - head < scroller.scrollTop || bottom > scroller.scrollTop + visibleHeight(scroller)) to.top = minuteTop(start);
     if (lx < scroller.scrollLeft + gutter || rx > scroller.scrollLeft + scroller.clientWidth) to.left = Math.max(0, lx - gutter);
     if ('top' in to || 'left' in to) scroller.scrollTo({ ...to, behavior: scrollHow(smooth) });
+  }
+  function revealDay(k) {
+    const el = k && monthEl.querySelector('[data-k="' + k + '"]');
+    if (!el) return;
+    const top = el.offsetTop - monthEl.querySelector('.mo-h').offsetHeight;
+    if (top < monthEl.scrollTop || el.offsetTop + el.offsetHeight > monthEl.scrollTop + visibleHeight(monthEl)) monthEl.scrollTo({ top, behavior: scrollHow(true) });
   }
   function revealCard(id, smooth) {
     const el = mode === 'day' && plateEl.querySelector('.card[data-id="' + id + '"]');
@@ -1416,9 +1424,12 @@ dialog.set[open] { display: flex; flex-direction: column; }
       '<div class="field"><label for="f-note">Notiz</label><input id="f-note" autocomplete="off" value="' + esc(d.note) + '" placeholder="zum Beispiel: Kunde wartet"></div>' +
       '<div class="f-actions"><button type="submit" class="btn go">' + (a ? 'Änderungen speichern' : 'Termin anlegen') + '</button><button type="button" class="btn quiet" data-form-cancel>Abbrechen</button></div>' +
       '</form></div>';
+    const fromMonth = mode === 'month';
     mode = 'day';
     setDay(d.day ? fromKey(d.day) : cur);
     checkSlot();
+    // Die Tafel war im Monat ausgeblendet und steht danach ganz oben.
+    if (fromMonth) scrollToMinute(d.start, false);
     if (pre.focus) $(pre.focus).focus();
     else if (!a) $('f-name').focus();
     else $('panelTitle').focus();
