@@ -303,6 +303,10 @@ kbd {
 .card-name { padding: .3rem .6rem 0; font-size: .9688rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-line { padding: .05rem .6rem 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-line b { font-weight: 700; color: var(--ink); }
+.card-sub { font-size: .8125rem; font-weight: 400; color: var(--ink-2); }
+.card-sub b { font-weight: 700; color: var(--ink); }
+.card-head .card-sub, .card-head .card-sub b { color: inherit; }
+.card-head .card-sub { opacity: .8; }
 .card-open { position: absolute; inset: 0; z-index: 1; border: 0; padding: 0; margin: 0; background: none; opacity: 0; cursor: inherit; }
 .card-open:focus-visible { outline: 0; }
 .card:has(.card-open:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -1197,14 +1201,17 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const headPx = matchMedia('(pointer: coarse)').matches ? 44 : 23;
     const hgt = (a.dur * H) / 60 - 4, short = hgt < headPx + 22;
     const label = hm(a.start) + ' bis ' + hm(a.start + a.dur) + ', ' + a.c.name + ', ' + a.service + ', ' + ST[a.status];
+    // Leistung und Fahrzeug bleiben auch auf kurzen Karten sichtbar: was keine eigene Zeile bekommt, rückt hinter den Namen.
+    const svc = esc(a.service) + (a.note ? ' · <b>' + esc(a.note) + '</b>' : '');
+    const car = (a.c.car ? ' · ' + esc(a.c.car) : '') + (a.c.plate ? ' · ' + esc(a.c.plate) : '');
     let inner;
     if (short) {
-      inner = '<div class="card-head"><span class="who">' + hm(a.start) + ' ' + esc(a.c.name) + '</span><span class="st">' + GLYPH[a.status] + '<span class="stt">' + ST[a.status] + '</span></span></div>';
+      inner = '<div class="card-head"><span class="who">' + hm(a.start) + ' ' + esc(a.c.name) + '<span class="card-sub"> · ' + svc + car + '</span></span><span class="st">' + GLYPH[a.status] + '<span class="stt">' + ST[a.status] + '</span></span></div>';
     } else {
       inner = '<div class="card-head"><span>' + hm(a.start) + '–' + hm(a.start + a.dur) + '</span><span class="st">' + GLYPH[a.status] + '<span class="stt">' + ST[a.status] + '</span></span></div>' +
-        '<div class="card-name">' + esc(a.c.name) + '</div>' +
-        (hgt >= headPx + 40 ? '<div class="card-line">' + esc(a.c.car) + (a.c.plate ? ' · ' + esc(a.c.plate) : '') + '</div>' : '') +
-        (hgt >= headPx + 57 ? '<div class="card-line">' + esc(a.service) + (a.note ? ' · <b>' + esc(a.note) + '</b>' : '') + '</div>' : '');
+        (hgt >= headPx + 57 ? '<div class="card-name">' + esc(a.c.name) + '</div><div class="card-line">' + car.slice(3) + '</div><div class="card-line">' + svc + '</div>'
+          : hgt >= headPx + 40 ? '<div class="card-name">' + esc(a.c.name) + '</div><div class="card-line">' + svc + car + '</div>'
+          : '<div class="card-name">' + esc(a.c.name) + '<span class="card-sub"> · ' + svc + car + '</span></div>');
     }
     return '<div class="card' + (short ? ' short' : '') + (a.id === selId ? ' is-sel' : '') + '" data-id="' + a.id + '" data-s="' + a.status + '" style="top:' + ((a.start - boardFrom) * H / 60 + 2) + 'px;height:' + hgt + 'px">' +
       inner + '<button type="button" class="card-open" aria-label="' + esc(label) + '" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown Alt+ArrowLeft Alt+ArrowRight" aria-describedby="cardHelp"></button></div>';
