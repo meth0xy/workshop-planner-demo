@@ -291,6 +291,7 @@ kbd {
 }
 .card:hover { box-shadow: var(--sh-hover); }
 .card.leaving { pointer-events: none; z-index: 1; }
+.card.moving { opacity: .35; }
 .card-head {
   position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: .5rem;
   padding: .22rem .6rem; background: var(--hb); color: var(--hf); font-size: .8125rem; font-weight: 700; touch-action: none;
@@ -419,6 +420,7 @@ mark { background: none; color: inherit; font-weight: 800; text-decoration: unde
 /* Formular */
 .form { display: grid; gap: .875rem; padding: .5rem 1.25rem 0; }
 .field { display: grid; gap: .3rem; min-width: 0; }
+.field[hidden] { display: none; }
 .field label { font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
 .field .hint, .form > .hint, .set-body .hint { font-size: .8125rem; color: var(--ink-2); }
 .field input, .field select {
@@ -710,6 +712,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     <section class="month" id="month" aria-label="Monat" hidden></section>
     <div class="side">
       <aside class="panel" id="panel" data-view="idle" aria-labelledby="panelTitle"></aside>
+      <datalist id="dur-list"><option value="15 Min."><option value="30 Min."><option value="45 Min."><option value="1 Std."><option value="1,5 Std."><option value="2 Std."><option value="2,5 Std."><option value="3 Std."><option value="4 Std."><option value="5 Std."><option value="6 Std."></datalist>
       <div class="toasts" id="toasts" role="region" aria-label="Meldungen"></div>
     </div>
   </main>
@@ -805,6 +808,18 @@ dialog.set[open] { display: flex; flex-direction: column; }
   const pad = (n) => String(n).padStart(2, '0');
   const hm = (m) => pad(Math.floor(m / 60)) + ':' + pad(m % 60);
   const dur = (m) => (m < 60 ? m + ' Min.' : (m / 60).toLocaleString('de-DE') + ' Std.');
+  // Eine Dauer darf man tippen, wie man sie sagt: „45“, „45 Min.“, „1,5 Std.“, „2 h“, „1:30“ oder „1 Std. 30 Min.“.
+  // Kleine Zahlen ohne Einheit sind Stunden, größere Minuten. Gerundet wird auf die nächste Viertelstunde nach oben, höchstens zwölf Stunden.
+  function parseDur(v) {
+    const t = String(v).trim().toLowerCase().replace(/,/g, '.');
+    let m = t.match(/^(\d+):(\d{1,2})$/), min;
+    if (m) min = +m[1] * 60 + +m[2];
+    else if ((m = t.match(/^(\d+(?:\.\d+)?)\s*(?:h|std\.?|stunden?)\s*(\d+)\s*(?:m|min\.?|minuten?)?$/))) min = +m[1] * 60 + +m[2];
+    else if ((m = t.match(/^(\d+(?:\.\d+)?)\s*(h|std\.?|stunden?|m|min\.?|minuten?)?$/))) min = m[2] ? (m[2][0] === 'm' ? +m[1] : +m[1] * 60) : +m[1] < 10 ? +m[1] * 60 : +m[1];
+    if (!(min > 0)) return 0;
+    return Math.min(720, Math.ceil(min / 15) * 15);
+  }
+  const CUSTOM = '__custom';
   const key = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   const fromKey = (k) => { const p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
   const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
@@ -1392,7 +1407,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
   let panelSig = null;
   function panelEnter() {
     const depth = (v) => ({ idle: 0, overview: 0, search: 1, detail: 2, form: 3, finder: 2, finderBack: 4 }[v]);
-    const name = view === 'finder' && finder && finder.back ? 'finderBack' : view;
+    const name = view === 'finder' && finder && (finder.back || finder.fromDetail) ? 'finderBack' : view;
     const sig = name + ':' + (view === 'detail' || view === 'form' ? selId + (formState ? formState.mode : '') : '');
     const prev = panelSig;
     panelSig = sig;
@@ -1640,7 +1655,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
   function openForm(kind, pre = {}) {
     const a = kind === 'edit' ? BY.get(pre.id) : null;
     let d;
-    if (a) d = { name: a.c.name, phone: a.c.phone, plate: a.c.plate, car: a.c.car, service: a.service, len: a.dur, day: a.key, start: a.start, lane: a.lane, note: a.note };
+    // Kommt das Formular aus der Terminsuche zurück, gelten deren Werte vor denen des gespeicherten Termins.
+    if (a) d = { name: a.c.name, phone: a.c.phone, plate: a.c.plate, car: a.c.car, service: a.service, len: a.dur, day: a.key, start: a.start, lane: a.lane, note: a.note, ...pre };
     else {
       const svc = svcOf(pre.service) || settings.services[0], day = pre.day || key(cur);
       d = { name: '', phone: '', plate: '', car: '', note: '', service: svc.name, len: svc.dur, day, ...(pre.start == null ? firstFree(day, svc) : null), ...pre };
@@ -1651,8 +1667,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     panel.dataset.view = 'form';
     let starts = '';
     for (let t = boardFrom; t <= boardTo - STEP; t += STEP) starts += opt(t, hm(t), t === d.start);
-    const lens = [...new Set([...LENS, d.len])].sort((x, y) => x - y);
-    const names = [...new Set([...settings.services.map((s) => s.name), d.service])];
+    const custom = !svcOf(d.service);
     panel.innerHTML =
       '<div class="p-head"><h2 id="panelTitle" tabindex="-1">' + (a ? 'Termin ändern' : 'Neuer Termin') + '</h2><button type="button" class="icon-btn" data-form-cancel aria-label="Abbrechen">' + ICON.x + '</button></div>' +
       '<div class="p-scroll"><form class="form" id="f" novalidate>' +
@@ -1663,13 +1678,16 @@ dialog.set[open] { display: flex; flex-direction: column; }
       '<div class="row2"><div class="field"><label for="f-plate">Kennzeichen</label><input id="f-plate" autocapitalize="characters" autocomplete="off" value="' + esc(d.plate) + '"></div>' +
       '<div class="field"><label for="f-phone">Telefon</label><input id="f-phone" type="tel" autocomplete="off" value="' + esc(d.phone) + '"></div></div>' +
       '<div class="field"><label for="f-car">Fahrzeug</label><input id="f-car" autocomplete="off" value="' + esc(d.car) + '"></div>' +
-      '<div class="row2"><div class="field"><label for="f-service">Leistung</label><select id="f-service">' + names.map((s) => opt(s, s, s === d.service)).join('') + '</select></div>' +
-      '<div class="field"><label for="f-len">Dauer</label><select id="f-len">' + lens.map((m) => opt(m, dur(m), m === d.len)).join('') + '</select></div></div>' +
+      '<div class="row2"><div class="field"><label for="f-service">Leistung</label><select id="f-service">' + serviceOpts(custom ? CUSTOM : d.service) + '</select></div>' +
+      durField('f-len', d.len, '') + '</div>' +
+      '<div class="field" id="f-svc-wrap"' + (custom ? '' : ' hidden') + '><label for="f-svc-name">Reparatur</label>' +
+      '<input id="f-svc-name" autocomplete="off" value="' + esc(custom ? d.service : '') + '" placeholder="zum Beispiel: Kupplung tauschen" data-error="f-svc-err" aria-invalid="false">' +
+      '<span class="err" id="f-svc-err">Fehler: Bitte eintragen, was gemacht wird.</span></div>' +
       '<div class="row3"><div class="field"><label for="f-day">Tag</label><input id="f-day" type="date" required value="' + d.day + '"></div>' +
       '<div class="field"><label for="f-start">Beginn</label><select id="f-start">' + starts + '</select></div>' +
       '<div class="field"><label for="f-lane">Mechaniker</label><select id="f-lane">' + settings.lanes.map((l, i) => opt(i, l.name, i === d.lane)).join('') + '</select></div></div>' +
       '<div id="f-slot" aria-live="polite"></div>' +
-      (a ? '' : '<button type="button" class="link" data-to-finder>' + ICON.find + 'Freien Termin finden</button>') +
+      '<button type="button" class="link" data-to-finder>' + ICON.find + 'Freien Termin finden</button>' +
       '<div class="field"><label for="f-note">Notiz</label><input id="f-note" autocomplete="off" value="' + esc(d.note) + '" placeholder="zum Beispiel: Kunde wartet"></div>' +
       '<div class="f-actions"><button type="submit" class="btn go">' + (a ? 'Änderungen speichern' : 'Termin anlegen') + '</button><button type="button" class="btn quiet" data-form-cancel>Abbrechen</button></div>' +
       '</form></div>';
@@ -1688,12 +1706,28 @@ dialog.set[open] { display: flex; flex-direction: column; }
     const s = findSlots(A, settings, { service: svc, from: day, part: 'any', lane: null, days: 1, now: { key: todayKey, min: nowMin } }).find((x) => x.day === day);
     return s ? { lane: s.lane, start: s.start } : { lane: 0, start: (windowOf(day, 0) || { open: boardFrom + 60 }).open };
   }
-  function formValues() {
-    return { day: $('f-day').value, start: +$('f-start').value, len: +$('f-len').value, lane: +$('f-lane').value };
+  // Leistung und Dauer sehen im Formular und in der Terminsuche gleich aus. „Andere Reparatur“ nimmt einen eigenen Namen.
+  const serviceOpts = (sel) => settings.services.map((s) => opt(s.name, s.name, s.name === sel)).join('') + opt(CUSTOM, 'Andere Reparatur …', sel === CUSTOM);
+  const durField = (id, len, fi) => '<div class="field"><label for="' + id + '">Dauer</label>' +
+    '<input id="' + id + '"' + (fi ? ' data-fi="' + fi + '"' : '') + ' list="dur-list" inputmode="text" autocomplete="off" value="' + esc(len ? dur(len) : '') + '" aria-describedby="' + id + '-err" aria-invalid="false">' +
+    '<span class="err" id="' + id + '-err">Fehler: Dauer zum Beispiel als „45 Min.“, „1,5 Std.“ oder „2:30“.</span></div>';
+  // Eine lesbare Dauer bleibt beim Verlassen stehen, eine unlesbare wird rot.
+  function tidyDur(el) {
+    const len = parseDur(el.value), err = $(el.id + '-err');
+    el.setAttribute('aria-invalid', String(!len));
+    el.style.borderColor = len ? '' : 'var(--danger)';
+    if (err) err.style.display = len ? '' : 'block';
+    if (len) el.value = dur(len);
+    return len;
   }
-  const formDraft = () => ({ name: $('f-name').value, phone: $('f-phone').value, plate: $('f-plate').value, car: $('f-car').value, note: $('f-note').value, service: $('f-service').value, ...formValues() });
+  const formService = () => ($('f-service').value === CUSTOM ? $('f-svc-name').value.trim() : $('f-service').value);
+  function formValues() {
+    return { day: $('f-day').value, start: +$('f-start').value, len: parseDur($('f-len').value), lane: +$('f-lane').value };
+  }
+  const formDraft = () => ({ name: $('f-name').value, phone: $('f-phone').value, plate: $('f-plate').value, car: $('f-car').value, note: $('f-note').value, service: formService(), ...formValues() });
   function slotProblem(v, except) {
     if (!v.day) return { text: 'Bitte einen Tag wählen.' };
+    if (!v.len) return { text: 'Bitte eine Dauer eintragen, zum Beispiel 1,5 Std.' };
     const w = windowOf(v.day, v.lane), name = settings.lanes[v.lane].name, c = w && clash(v.day, v.lane, v.start, v.len, except);
     const p = !w ? { short: 'geschlossen', text: dayWindow(v.day) ? name + ' ist an diesem Tag nicht da.' : 'Am ' + dfTitle.format(fromKey(v.day)) + ' ist die Werkstatt geschlossen.' }
       : v.start < w.open ? { short: 'zu früh', text: 'Die Werkstatt öffnet an diesem Tag erst um ' + hm(w.open) + ' Uhr.' }
@@ -1730,14 +1764,18 @@ dialog.set[open] { display: flex; flex-direction: column; }
   function draftSlot() {
     if (view === 'form' && $('f-day')) {
       const v = formValues();
-      return { ...v, bad: !!slotProblem(v, formState.id), label: $('f-name').value || (formState.mode === 'edit' ? '' : 'Neuer Termin') };
+      return v.len ? { ...v, bad: !!slotProblem(v, formState.id), label: $('f-name').value || (formState.mode === 'edit' ? '' : 'Neuer Termin') } : null;
     }
-    const s = view === 'finder' && finder.shown[finder.active], svc = s && finderService();
-    return s ? { day: s.day, lane: s.lane, start: s.start, len: svc.dur, bad: false, label: svc.name } : null;
+    const s = view === 'finder' && finder.shown[finder.active], svc = s && finderService(), moved = s && BY.get(finder.editId);
+    return s ? { day: s.day, lane: s.lane, start: s.start, len: svc.dur, bad: false, label: moved ? moved.c.name + ' · ' + svc.name : svc.name } : null;
   }
   let lastGhost = null;
   function drawDraftGhost() {
     plateEl.querySelectorAll('.ghost.draft').forEach((g) => g.remove());
+    // Wer verschoben wird, tritt auf der Tafel zurück, damit der neue Platz lesbar bleibt.
+    plateEl.querySelectorAll('.card.moving').forEach((c) => c.classList.remove('moving'));
+    const mv = view === 'finder' && finder.editId != null && plateEl.querySelector('.card[data-id="' + finder.editId + '"]');
+    if (mv) mv.classList.add('moving');
     const v = draftSlot(), lane = v && v.day === key(cur) && plateEl.querySelector('.lane[data-lane="' + v.lane + '"]');
     if (!lane) { lastGhost = null; return null; }
     const H = hourPx(), g = document.createElement('div');
@@ -1764,9 +1802,16 @@ dialog.set[open] { display: flex; flex-direction: column; }
       anim(name, [{ translate: '0 0' }, { translate: '-6px 0' }, { translate: '5px 0' }, { translate: '-3px 0' }, { translate: '2px 0' }, { translate: '0 0' }], { duration: 360, easing: 'ease-out' });
       return;
     }
+    const svcName = $('f-svc-name');
+    if ($('f-service').value === CUSTOM && !svcName.value.trim()) {
+      svcName.setAttribute('aria-invalid', 'true'); svcName.style.borderColor = 'var(--danger)'; $('f-svc-err').style.display = 'block';
+      svcName.focus();
+      return;
+    }
+    if (!tidyDur($('f-len'))) { $('f-len').focus(); return; }
     const v = formValues(), p = slotProblem(v, formState.id);
     if (p) { const c = $('f-clash') || $('f-slot'); c.setAttribute('tabindex', '-1'); c.focus(); anim(c, [{ scale: 1 }, { scale: 1.02 }, { scale: 1 }], { duration: 300, easing: EZ.out }); return; }
-    const vals = { name: name.value.trim(), phone: $('f-phone').value.trim(), plate: $('f-plate').value.trim().toUpperCase(), car: $('f-car').value.trim(), service: $('f-service').value, note: $('f-note').value.trim() };
+    const vals = { name: name.value.trim(), phone: $('f-phone').value.trim(), plate: $('f-plate').value.trim().toUpperCase(), car: $('f-car').value.trim(), service: formService(), note: $('f-note').value.trim() };
     let a;
     if (formState.mode === 'edit') {
       a = BY.get(formState.id);
@@ -1831,31 +1876,48 @@ dialog.set[open] { display: flex; flex-direction: column; }
     return out.sort((x, y) => (x.day < y.day ? -1 : x.day > y.day ? 1 : x.start - y.start || x.lane - y.lane));
   }
 
+  // editId: Die Suche verschiebt einen bestehenden Termin. Er selbst blockiert dann keine Zeit, und sein jetziger Platz wird nicht angeboten.
+  // back: zurück ins Formular. fromDetail: „Verschieben“ in den Details, zurück dorthin.
   function openFinder(pre = {}) {
-    finder = { service: pre.service, from: todayKey, part: 'any', lane: null, limit: 12, shown: [], days: new Map(), active: 0, home: cur, draft: pre.draft || null, dirty: !!pre.dirty, back: !!pre.back };
+    const known = svcOf(pre.service) || (!pre.service && settings.services[0]);
+    finder = { service: known ? known.name : pre.service, custom: !known, dur: pre.dur || (known ? known.dur : 60), from: todayKey, part: 'any', lane: null, limit: 12, shown: [], days: new Map(), active: 0, home: cur,
+      draft: pre.draft || null, dirty: !!pre.dirty, back: !!pre.back, editId: pre.editId == null ? null : pre.editId, fromDetail: !!pre.fromDetail };
     showFinder();
   }
   function finderFromForm() {
-    const draft = formDraft(), dirty = formState.dirty;
+    const draft = formDraft(), dirty = formState.dirty, editId = formState.mode === 'edit' ? formState.id : null;
     formState = null;
-    openFinder({ service: draft.service, draft, dirty, back: true });
+    openFinder({ service: draft.service, dur: draft.len, draft, dirty, back: true, editId });
   }
-  const finderService = () => svcOf(finder.service) || settings.services[0];
+  function moveAppt(a) {
+    openFinder({ service: a.service, dur: a.dur, editId: a.id, fromDetail: true });
+  }
+  const finderService = () => {
+    const s = !finder.custom && svcOf(finder.service), d = finder.dur || (s ? s.dur : 60);
+    return s ? (d === s.dur ? s : { ...s, dur: d }) : { name: (finder.service || '').trim() || 'Andere Reparatur', dur: d, days: null, lanes: null };
+  };
+  function finderRule() {
+    const svc = finderService(), rule = (svc.days ? ', nur ' + listDe(advs(svc.days)) : '') + (svc.lanes ? ', nur bei ' + listDe(laneNames(svc.lanes)) : '');
+    $('fi-rule').textContent = svc.name + ' dauert ' + dur(svc.dur) + (rule && rule + '.');
+  }
   function showFinder() {
     view = 'finder';
     selId = null;
     panel.dataset.view = 'finder';
-    const svc = finderService();
+    const svc = finderService(), moved = BY.get(finder.editId), back = finder.back || finder.fromDetail;
     panel.innerHTML =
-      (finder.back ? '<button type="button" class="back" data-finder-close>' + ICON.left + 'Zurück zum Termin</button>' : '') +
-      '<div class="p-head"><h2 id="panelTitle" tabindex="-1">Freien Termin finden</h2><button type="button" class="icon-btn" data-finder-close aria-label="Terminsuche schließen">' + ICON.x + '</button></div>' +
+      (back ? '<button type="button" class="back" data-finder-close>' + ICON.left + 'Zurück zum Termin</button>' : '') +
+      '<div class="p-head"><h2 id="panelTitle" tabindex="-1">' + (moved ? 'Termin verschieben' : 'Freien Termin finden') + '</h2><button type="button" class="icon-btn" data-finder-close aria-label="Terminsuche schließen">' + ICON.x + '</button></div>' +
       '<div class="p-scroll"><div class="form">' +
-      '<div class="row2"><div class="field"><label for="fi-service">Leistung</label><select id="fi-service" data-fi="service" aria-describedby="fi-rule">' + settings.services.map((s) => opt(s.name, s.name, s === svc)).join('') + '</select></div>' +
-      '<div class="field"><label for="fi-from">Frühestens ab</label><input id="fi-from" data-fi="from" type="date" min="' + todayKey + '" value="' + finder.from + '"></div></div>' +
-      '<div class="row2"><div class="field"><label for="fi-part">Tageszeit</label><select id="fi-part" data-fi="part">' + [['any', 'egal'], ['am', 'vormittags'], ['pm', 'nachmittags']].map(([v, l]) => opt(v, l, v === finder.part)).join('') + '</select></div>' +
+      (moved ? '<p class="hint"><b>' + esc(moved.c.name) + '</b> · Bisher: ' + esc(dayLabel(moved.key)) + ', ' + hm(moved.start) + ' Uhr bei ' + esc(settings.lanes[moved.lane].name) + '</p>' : '') +
+      '<div class="row2"><div class="field"><label for="fi-service">Leistung</label><select id="fi-service" data-fi="service" aria-describedby="fi-rule">' + serviceOpts(finder.custom ? CUSTOM : svc.name) + '</select></div>' +
+      durField('fi-len', svc.dur, 'len') + '</div>' +
+      '<div class="field" id="fi-name-wrap"' + (finder.custom ? '' : ' hidden') + '><label for="fi-name">Reparatur</label><input id="fi-name" autocomplete="off" value="' + esc(finder.custom ? finder.service || '' : '') + '" placeholder="zum Beispiel: Kupplung tauschen"></div>' +
+      '<div class="row3"><div class="field"><label for="fi-from">Frühestens ab</label><input id="fi-from" data-fi="from" type="date" min="' + todayKey + '" value="' + finder.from + '"></div>' +
+      '<div class="field"><label for="fi-part">Tageszeit</label><select id="fi-part" data-fi="part">' + [['any', 'egal'], ['am', 'vormittags'], ['pm', 'nachmittags']].map(([v, l]) => opt(v, l, v === finder.part)).join('') + '</select></div>' +
       '<div class="field"><label for="fi-lane">Mechaniker</label><select id="fi-lane" data-fi="lane">' + opt('', 'egal', finder.lane == null) + settings.lanes.map((l, i) => opt(i, l.name, i === finder.lane)).join('') + '</select></div></div>' +
       '<p class="hint" id="fi-rule"></p></div><div id="fi-out"></div></div>' +
-      '<p class="p-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> Vorschlag wechseln</span><span><kbd>Enter</kbd> übernehmen</span><span><kbd>Esc</kbd> ' + (finder.back ? 'zurück zum Termin' : 'schließen') + '</span></p>';
+      '<p class="p-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> Vorschlag wechseln</span><span><kbd>Enter</kbd> übernehmen</span><span><kbd>Esc</kbd> ' + (back ? 'zurück zum Termin' : 'schließen') + '</span></p>';
     panelEnter();
     renderSlots();
     $('fi-service').focus();
@@ -1863,7 +1925,8 @@ dialog.set[open] { display: flex; flex-direction: column; }
   function renderSlots() {
     const svc = finderService(), first = finder.from > todayKey ? finder.from : todayKey;
     const query = { service: svc, from: finder.from, part: finder.part, lane: finder.lane, days: 56, now: { key: todayKey, min: nowMin } };
-    const all = findSlots(A, settings, query);
+    const moved = BY.get(finder.editId), appts = moved ? A.filter((x) => x !== moved) : A;
+    const all = findSlots(appts, settings, query).filter((x) => !moved || x.day !== moved.key || x.start !== moved.start || x.lane !== moved.lane);
     const shown = [];
     let more = false, n = 0;
     for (const s of all) {
@@ -1874,13 +1937,12 @@ dialog.set[open] { display: flex; flex-direction: column; }
     finder.days = new Map();
     for (const s of all) if (!finder.days.has(s.day)) finder.days.set(s.day, s.start);
     finder.active = Math.min(Math.max(finder.active, 0), shown.length - 1);
-    const rule = (svc.days ? ', nur ' + listDe(advs(svc.days)) : '') + (svc.lanes ? ', nur bei ' + listDe(laneNames(svc.lanes)) : '');
-    $('fi-rule').textContent = svc.name + ' dauert ' + dur(svc.dur) + (rule && rule + '.');
+    finderRule();
     let h = '';
     if (!shown.length) {
       const span = (first === todayKey ? 'in den nächsten acht Wochen' : 'in den acht Wochen ab dem ' + dfDate.format(fromKey(first))) + { any: '', am: ' vormittags', pm: ' nachmittags' }[finder.part];
       // Fände eine Viertelstunde Platz, fehlt nicht freie Zeit, sondern Zeit am Stück. Ohne Termine gerechnet zeigt sich, ob schon die Öffnungszeit zu kurz ist.
-      const tooLong = findSlots(A, settings, { ...query, service: { ...svc, dur: STEP } }).length > 0, opens = tooLong && findSlots([], settings, query).length > 0;
+      const tooLong = findSlots(appts, settings, { ...query, service: { ...svc, dur: STEP } }).length > 0, opens = tooLong && findSlots([], settings, query).length > 0;
       h = '<p class="empty">' + (!tooLong ? 'In den acht Wochen ab ' + (first === todayKey ? 'heute' : 'dem ' + dfDate.format(fromKey(first))) + ' ist für ' + esc(svc.name) + ' nichts frei.'
         : esc(svc.name) + ' dauert ' + dur(svc.dur) + ' So lange ' + (!opens ? 'am Stück hat die Werkstatt ' + span + ' nicht geöffnet.'
           : finder.lane == null ? 'ist ' + span + ' kein Mechaniker am Stück frei.' : 'ist ' + esc(settings.lanes[finder.lane].name) + ' ' + span + ' nicht am Stück frei.')) +
@@ -1912,8 +1974,17 @@ dialog.set[open] { display: flex; flex-direction: column; }
   }
   function finderInput(el) {
     finderSoon.cancel();
-    const v = el.value;
-    finder[el.dataset.fi] = el.dataset.fi === 'lane' ? (v === '' ? null : +v) : el.dataset.fi === 'from' ? v || todayKey : v;
+    const v = el.value, fi = el.dataset.fi;
+    if (fi === 'len') {
+      const len = tidyDur(el);
+      if (!len || len === finder.dur) return;
+      finder.dur = len;
+    } else if (fi === 'service') {
+      finder.custom = v === CUSTOM;
+      $('fi-name-wrap').hidden = !finder.custom;
+      if (finder.custom) { finder.service = $('fi-name').value; $('fi-name').focus(); }
+      else { finder.service = v; finder.dur = svcOf(v).dur; tidyDur(Object.assign($('fi-len'), { value: dur(finder.dur) })); }
+    } else finder[fi] = fi === 'lane' ? (v === '' ? null : +v) : fi === 'from' ? v || todayKey : v;
     Object.assign(finder, { limit: 12, active: 0 });
     renderSlots();
     const s = finder.shown[0];
@@ -1922,12 +1993,14 @@ dialog.set[open] { display: flex; flex-direction: column; }
   // Das Datumsfeld meldet jede Ziffer. Die Suche über acht Wochen läuft erst, wenn die Eingabe ruht, und nur, solange das Feld noch da ist.
   const finderSoon = debounced((el) => { if (view === 'finder' && el.isConnected) finderInput(el); }, 250);
   function takeSlot(i) {
-    const s = finder.shown[i], svc = finderService();
-    openForm('new', { ...finder.draft, service: svc.name, len: svc.dur, day: s.day, start: s.start, lane: s.lane, dirty: finder.dirty, fromFinder: true });
+    const s = finder.shown[i], svc = finderService(), edit = finder.editId != null;
+    if (edit && !BY.get(finder.editId)) { toast('Der Termin ist inzwischen abgesagt.'); finder = null; view = 'idle'; render(); return; }
+    openForm(edit ? 'edit' : 'new', { ...finder.draft, id: finder.editId, service: svc.name, len: svc.dur, day: s.day, start: s.start, lane: s.lane, dirty: edit || finder.dirty, fromFinder: true, focus: edit ? 'panelTitle' : undefined });
   }
   async function closeFinder() {
     const f = finder;
-    if (f.back) { finder = null; openForm('new', { ...f.draft, dirty: f.dirty }); return; }
+    if (f.back) { finder = null; openForm(f.editId != null && BY.get(f.editId) ? 'edit' : 'new', { ...f.draft, id: f.editId, dirty: f.dirty }); return; }
+    if (f.fromDetail) { finder = null; cur = f.home; if (BY.get(f.editId)) openDetail(f.editId, false); else { view = 'idle'; render(); } return; }
     if (!(await dropDraft())) return;
     cur = f.home;
     render();
@@ -2204,7 +2277,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
     if (t.closest('[data-close]')) { selId = null; view = fromSearch && q.value.trim() ? 'search' : 'idle'; fromSearch = false; render(); return; }
     const a = BY.get(selId);
     if (t.closest('[data-next]') && a) { setStatus(a, NEXT[a.status][0], 'next'); return; }
-    if (t.closest('[data-move]') && a) { openForm('edit', { id: a.id, focus: 'f-start' }); return; }
+    if (t.closest('[data-move]') && a) { moveAppt(a); return; }
     if (t.closest('[data-edit]') && a) { openForm('edit', { id: a.id }); return; }
     if (t.closest('[data-cancel]') && a) {
       const ok = await ask({ title: 'Termin absagen?', text: a.c.name + ', ' + dayLabel(a.key) + ' um ' + hm(a.start) + ' Uhr, ' + a.service + '.', keep: 'Termin behalten', act: 'Absagen' });
@@ -2243,7 +2316,13 @@ dialog.set[open] { display: flex; flex-direction: column; }
         if (!$('f-car').value) $('f-car').value = c.car;
       }
     }
-    if (e.target.id === 'f-service') { const svc = svcOf(e.target.value); if (svc) $('f-len').value = String(svc.dur); }
+    if (e.target.id === 'f-service') {
+      const svc = svcOf(e.target.value), custom = e.target.value === CUSTOM;
+      $('f-svc-wrap').hidden = !custom;
+      if (svc) tidyDur(Object.assign($('f-len'), { value: dur(svc.dur) }));
+      if (custom) $('f-svc-name').focus();
+    }
+    if (e.target.id === 'f-len') tidyDur(e.target);
     if (['f-day', 'f-start', 'f-lane', 'f-len', 'f-service'].includes(e.target.id)) {
       if (e.target.id === 'f-day' && $('f-day').value && $('f-day').value !== key(cur)) setDay(fromKey($('f-day').value));
       checkSlot();
@@ -2251,8 +2330,10 @@ dialog.set[open] { display: flex; flex-direction: column; }
   });
   panel.addEventListener('input', (e) => {
     if (view === 'finder' && e.target.dataset.fi === 'from') { finderSoon(e.target); return; }
+    if (view === 'finder' && e.target.id === 'fi-name') { finder.service = e.target.value; finderRule(); drawDraftGhost(); return; }
     if (view !== 'form') return;
     formState.dirty = true;
+    if (e.target.id === 'f-svc-name' && e.target.value.trim()) { e.target.setAttribute('aria-invalid', 'false'); e.target.style.borderColor = ''; $('f-svc-err').style.display = ''; }
     if (e.target.id === 'f-name') { syncInvalidSoft(e.target); drawDraftGhost(); suggest(e.target.value); }
   });
   let suggIdx = -1, suggList = [];
@@ -2360,7 +2441,7 @@ dialog.set[open] { display: flex; flex-direction: column; }
   $('newBtn').addEventListener('click', async () => { if (!(await dropDraft())) return; openForm('new', { day: key(cur) }); });
   $('findBtn').addEventListener('click', async () => {
     if (view === 'finder') { $('fi-service').focus(); return; }
-    if (view === 'form' && formState.mode === 'new') { finderFromForm(); return; }
+    if (view === 'form') { finderFromForm(); return; }
     if (!(await dropDraft())) return;
     openFinder();
   });
